@@ -1,8 +1,5 @@
 import Stripe from 'stripe'
 
-const GHL_API_BASE    = 'https://services.leadconnectorhq.com'
-const GHL_API_VERSION = '2021-07-28'
-
 async function notifySlackError(context, err) {
   const token  = process.env.SLACK_BOT_TOKEN
   const userId = process.env.ADMIN_SLACK_USER_ID
@@ -20,47 +17,44 @@ async function notifySlackError(context, err) {
 }
 
 export async function createSetupIntent(req, res) {
-  const { client_id } = req.query
-  if (!client_id) return res.status(400).json({ error: 'client_id is required' })
+  const { location_id } = req.query
+  if (!location_id) return res.status(400).json({ error: 'location_id is required' })
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
+  // Internal email used as a stable lookup key — not a real email address
+  const internalEmail = `loc_${location_id}@billing.internal`
+
   try {
-    // Fetch GHL contact to check for an existing Stripe Customer
-    const ghlRes = await fetch(`${GHL_API_BASE}/contacts/${client_id}`, {
-      headers: { Authorization: `Bearer ${process.env.GHL_API_KEY}`, Version: GHL_API_VERSION },
-    })
-    if (!ghlRes.ok) throw new Error(`GHL ${ghlRes.status}: ${await ghlRes.text()}`)
+    // Find existing Stripe Customer for this location by internal email
+    let customerId = null
+    const list = await stripe.customers.list({ email: internalEmail, limit: 1 })
+    if (list.data.length > 0) customerId = list.data[0].id
 
-    const { contact } = await ghlRes.json()
-    const cf = contact.customFields || []
-    const existingCusId = (cf.find(f => f.key === 'stripe_customer_id') || {}).value
-
-    let customerId = existingCusId || null
-
+    // Create new customer if none found
     if (!customerId) {
-      // First visit — create a Stripe Customer linked to this GHL contact
       const customer = await stripe.customers.create({
-        name:     `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || undefined,
-        email:    contact.email || undefined,
-        phone:    contact.phone || undefined,
-        metadata: { ghl_contact_id: client_id },
+        email:    internalEmail,
+        metadata: { location_id },
       })
       customerId = customer.id
     }
 
-    // SetupIntent with off_session — card can be charged without cardholder present later
     const setupIntent = await stripe.setupIntents.create({
       customer:             customerId,
       payment_method_types: ['card'],
       usage:                'off_session',
-      metadata:             { ghl_contact_id: client_id },
+      metadata:             { location_id },
     })
 
-    res.json({ client_secret: setupIntent.client_secret, customer_id: customerId })
+    res.json({
+      client_secret:      setupIntent.client_secret,
+      customer_id:        customerId,
+      business_record_id: location_id,
+    })
   } catch (err) {
     console.error('[create-setup-intent]', err)
-    await notifySlackError(`client_id=${client_id}`, err)
+    await notifySlackError(`location_id=${location_id}`, err)
     res.status(500).json({ error: 'Internal server error', detail: err.message })
   }
 }

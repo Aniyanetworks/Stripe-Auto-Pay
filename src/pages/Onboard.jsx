@@ -5,7 +5,6 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import Logo from '../components/Logo'
 import SecureBadge from '../components/SecureBadge'
 
-// ── Stripe Elements appearance — mirrors the CSS brand tokens ─────────────────
 const STRIPE_APPEARANCE = {
   theme: 'flat',
   variables: {
@@ -19,8 +18,7 @@ const STRIPE_APPEARANCE = {
   },
 }
 
-// ── Inner form — must live inside <Elements> to access useStripe/useElements ──
-function CheckoutForm({ clientId, customerId, clientSecret }) {
+function CheckoutForm({ businessRecordId, customerId, clientSecret }) {
   const stripe   = useStripe()
   const elements = useElements()
   const navigate = useNavigate()
@@ -31,7 +29,6 @@ function CheckoutForm({ clientId, customerId, clientSecret }) {
   const [submitting,     setSubmitting]     = useState(false)
 
   function handleCardChange(e) {
-    // Surface Stripe's real-time validation messages (e.g. "Your card number is incomplete")
     setCardError(e.error ? e.error.message : '')
   }
 
@@ -46,11 +43,8 @@ function CheckoutForm({ clientId, customerId, clientSecret }) {
     }
 
     if (!stripe || !elements) return
-
     setSubmitting(true)
 
-    // Confirm the SetupIntent — Stripe tokenises the card and applies SCA exemptions
-    // for off-session card-on-file usage so future charges don't require 3DS
     const { setupIntent, error } = await stripe.confirmCardSetup(clientSecret, {
       payment_method: {
         card:             elements.getElement(CardElement),
@@ -59,17 +53,12 @@ function CheckoutForm({ clientId, customerId, clientSecret }) {
     })
 
     if (error) {
-      // SetupIntent already succeeded (e.g. user hit submit twice, or navigated back).
-      // The card is already saved — extract the payment method and continue normally.
       if (
         error.code === 'setup_intent_unexpected_state' &&
         error.setup_intent?.status === 'succeeded'
       ) {
         const pmId = error.setup_intent.payment_method
-        if (pmId) {
-          await finishSave(pmId)
-          return
-        }
+        if (pmId) { await finishSave(pmId); return }
       }
       setCardError(error.message)
       setSubmitting(false)
@@ -80,25 +69,20 @@ function CheckoutForm({ clientId, customerId, clientSecret }) {
   }
 
   async function finishSave(paymentMethodId) {
-    // Save the confirmed PaymentMethod ID to GHL via the server
-    // This keeps the GHL API key server-side and never exposes it to the browser
     try {
       const res = await fetch('/api/save-payment-method', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contact_id:        clientId,
-          payment_method_id: paymentMethodId,
-          customer_id:       customerId,
+          business_record_id: businessRecordId,
+          payment_method_id:  paymentMethodId,
+          customer_id:        customerId,
         }),
       })
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(
-          err.error ||
-          'Card saved with Stripe but profile update failed. Please contact support.'
-        )
+        throw new Error(err.error || 'Card saved with Stripe but profile update failed. Please contact support.')
       }
 
       navigate('/success')
@@ -110,7 +94,6 @@ function CheckoutForm({ clientId, customerId, clientSecret }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      {/* Cardholder name */}
       <div className="form-group">
         <label htmlFor="cardholder-name">Name on card</label>
         <input
@@ -125,7 +108,6 @@ function CheckoutForm({ clientId, customerId, clientSecret }) {
         {nameError && <div className="error-msg" role="alert">{nameError}</div>}
       </div>
 
-      {/* Stripe Card Element */}
       <div className="form-group">
         <label>Card details</label>
         <div className="card-element-wrapper">
@@ -148,7 +130,6 @@ function CheckoutForm({ clientId, customerId, clientSecret }) {
         {cardError && <div className="error-msg" role="alert">{cardError}</div>}
       </div>
 
-      {/* Mandate text — required by Stripe and card networks for card-on-file */}
       <p className="mandate">
         By saving your card and submitting this form, you authorise{' '}
         <strong>Aniya Network Solutions</strong> to charge your card for services
@@ -159,10 +140,7 @@ function CheckoutForm({ clientId, customerId, clientSecret }) {
 
       <button type="submit" className="btn" disabled={submitting || !stripe}>
         {submitting ? (
-          <>
-            <span className="spinner" aria-hidden="true" />
-            Processing…
-          </>
+          <><span className="spinner" aria-hidden="true" />Processing…</>
         ) : (
           'Save Card Securely'
         )}
@@ -173,43 +151,38 @@ function CheckoutForm({ clientId, customerId, clientSecret }) {
   )
 }
 
-// ── Outer component — initialises Stripe and fetches the SetupIntent ──────────
 export default function Onboard() {
   const [searchParams] = useSearchParams()
-  const clientId = searchParams.get('client_id')
+  const businessId = searchParams.get('location_id')
 
-  const [status,       setStatus]       = useState('loading') // loading | ready | error
-  const [pageError,    setPageError]    = useState('')
-  const [stripePromise, setStripePromise] = useState(null)
-  const [clientSecret, setClientSecret] = useState(null)
-  const [customerId,   setCustomerId]   = useState(null)
+  const [status,          setStatus]          = useState('loading')
+  const [pageError,       setPageError]       = useState('')
+  const [stripePromise,   setStripePromise]   = useState(null)
+  const [clientSecret,    setClientSecret]    = useState(null)
+  const [customerId,      setCustomerId]      = useState(null)
+  const [businessRecordId, setBusinessRecordId] = useState(null)
 
   useEffect(() => {
-    if (!clientId) {
-      setPageError('No client ID provided. Please use the link sent by your service provider.')
+    if (!businessId) {
+      setPageError('No location ID provided. Please use the link sent by your service provider.')
       setStatus('error')
       return
     }
 
     async function init() {
-      // Create a SetupIntent on the server — this also creates the Stripe Customer
-      // if one doesn't already exist for this GHL contact
-      const res = await fetch(
-        `/api/create-setup-intent?client_id=${encodeURIComponent(clientId)}`
-      )
+      const res = await fetch(`/api/create-setup-intent?location_id=${encodeURIComponent(businessId)}`)
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error || 'Could not initialise payment form. Please try again.')
       }
 
-      const { client_secret, customer_id } = await res.json()
+      const { client_secret, customer_id, business_record_id } = await res.json()
 
-      // loadStripe returns a Promise — pass it directly to <Elements>
-      // VITE_STRIPE_PUBLISHABLE_KEY is safe to embed in the frontend bundle
       setStripePromise(loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY))
       setClientSecret(client_secret)
       setCustomerId(customer_id)
+      setBusinessRecordId(business_record_id)
       setStatus('ready')
     }
 
@@ -217,9 +190,8 @@ export default function Onboard() {
       setPageError(err.message)
       setStatus('error')
     })
-  }, [clientId])
+  }, [businessId])
 
-  // ── Loading state ─────────────────────────────────────────────────────────
   if (status === 'loading') {
     return (
       <div className="loading-overlay" aria-label="Loading payment form">
@@ -228,7 +200,6 @@ export default function Onboard() {
     )
   }
 
-  // ── Error state ───────────────────────────────────────────────────────────
   if (status === 'error') {
     return (
       <div className="page-wrapper">
@@ -240,7 +211,6 @@ export default function Onboard() {
     )
   }
 
-  // ── Ready state — render the card form ────────────────────────────────────
   return (
     <div className="page-wrapper">
       <div className="card">
@@ -251,13 +221,12 @@ export default function Onboard() {
           <strong>after</strong> your appointment is completed — subject to admin approval.
         </p>
 
-        {/* Elements must wrap CheckoutForm so useStripe/useElements hooks work */}
         <Elements
           stripe={stripePromise}
           options={{ clientSecret, appearance: STRIPE_APPEARANCE }}
         >
           <CheckoutForm
-            clientId={clientId}
+            businessRecordId={businessRecordId}
             customerId={customerId}
             clientSecret={clientSecret}
           />

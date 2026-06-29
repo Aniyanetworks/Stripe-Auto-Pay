@@ -6,8 +6,8 @@ import Approve from './pages/Approve'
 // Root route: redirect to /onboard preserving the client_id param if present
 function Root() {
   const [searchParams] = useSearchParams()
-  const clientId = searchParams.get('client_id')
-  const to = clientId ? `/onboard?client_id=${encodeURIComponent(clientId)}` : '/onboard'
+  const locationId = searchParams.get('location_id')
+  const to = locationId ? `/onboard?location_id=${encodeURIComponent(locationId)}` : '/onboard'
   return <Navigate to={to} replace />
 }
 

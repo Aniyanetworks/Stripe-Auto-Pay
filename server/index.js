@@ -5,6 +5,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { createSetupIntent }    from './routes/createSetupIntent.js'
 import { savePaymentMethod }    from './routes/savePaymentMethod.js'
+import { createBusiness }       from './routes/createBusiness.js'
+import { getBusiness }          from './routes/getBusiness.js'
 import { createChargeRequest }  from './routes/createChargeRequest.js'
 import { getChargeRequest }     from './routes/getChargeRequest.js'
 import { approveCharge }        from './routes/approveCharge.js'
@@ -20,6 +22,7 @@ app.use(express.json())
 // API routes
 app.get('/api/create-setup-intent',      createSetupIntent)
 app.post('/api/save-payment-method',     savePaymentMethod)
+app.post('/api/create-business',         createBusiness)
 app.post('/api/create-charge-request',   createChargeRequest)
 app.get('/api/charge-request/:token',    getChargeRequest)
 app.post('/api/approve-charge',          approveCharge)

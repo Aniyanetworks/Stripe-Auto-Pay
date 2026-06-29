@@ -1,9 +1,6 @@
 import Stripe from 'stripe'
 import { chargeRequests } from './createChargeRequest.js'
 
-const GHL_API_BASE    = 'https://services.leadconnectorhq.com'
-const GHL_API_VERSION = '2021-07-28'
-
 async function postSlack(text) {
   const botToken = process.env.SLACK_BOT_TOKEN
   const userId   = process.env.ADMIN_SLACK_USER_ID
@@ -20,12 +17,12 @@ export async function approveCharge(req, res) {
   if (!token) return res.status(400).json({ error: 'token required' })
 
   const entry = chargeRequests.get(token)
-  if (!entry)                        return res.status(404).json({ error: 'Charge request not found or expired' })
+  if (!entry)                     return res.status(404).json({ error: 'Charge request not found or expired' })
   if (entry.expiresAt < Date.now()) {
     chargeRequests.delete(token)
     return res.status(410).json({ error: 'This charge request has expired' })
   }
-  if (entry.status !== 'pending')    return res.status(409).json({ error: `Charge already ${entry.status}` })
+  if (entry.status !== 'pending') return res.status(409).json({ error: `Charge already ${entry.status}` })
 
   entry.status = 'processing'
 
@@ -33,6 +30,21 @@ export async function approveCharge(req, res) {
   const dollars = (entry.amount / 100).toFixed(2)
 
   try {
+    // Stripe India requires billing details on the PaymentMethod for export transactions
+    const billingAddress = {
+      line1:       entry.customer_address?.line1       || '175 Derby St',
+      city:        entry.customer_address?.city        || 'Hingham',
+      state:       entry.customer_address?.state       || 'MA',
+      postal_code: entry.customer_address?.postal_code || '02043',
+      country:     entry.customer_address?.country     || 'US',
+    }
+    await stripe.paymentMethods.update(entry.payment_method_id, {
+      billing_details: {
+        name:    entry.customer_name,
+        address: billingAddress,
+      },
+    })
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount:         entry.amount,
       currency:       'usd',
@@ -41,38 +53,25 @@ export async function approveCharge(req, res) {
       off_session:    true,
       confirm:        true,
       description:    entry.description,
-      metadata:       { ghl_contact_id: entry.contact_id },
-      // Required by Stripe India export regulations
+      metadata:       { location_id: entry.location_id },
       shipping: {
         name:    entry.customer_name,
-        address: entry.customer_address || { country: 'US' },
+        address: {
+          line1:       entry.customer_address?.line1       || '175 Derby St',
+          city:        entry.customer_address?.city        || 'Hingham',
+          state:       entry.customer_address?.state       || 'MA',
+          postal_code: entry.customer_address?.postal_code || '02043',
+          country:     entry.customer_address?.country     || 'US',
+        },
       },
     })
 
     entry.status         = 'charged'
     entry.payment_intent = paymentIntent.id
 
-    // Write charge record back to GHL contact
-    await fetch(`${GHL_API_BASE}/contacts/${entry.contact_id}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${process.env.GHL_API_KEY}`,
-        Version: GHL_API_VERSION,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        customFields: [
-          { key: 'last_charge_amount',      field_value: `$${dollars}` },
-          { key: 'last_charge_description', field_value: entry.description },
-          { key: 'last_charge_at',          field_value: new Date().toISOString() },
-          { key: 'last_payment_intent',     field_value: paymentIntent.id },
-        ],
-      }),
-    })
-
     await postSlack(
       `✅ *Charge Approved & Processed*\n` +
-      `*Customer:* ${entry.customer_name}\n` +
+      `*Business:* ${entry.customer_name}\n` +
       `*Amount:* $${dollars}\n` +
       `*Description:* ${entry.description}\n` +
       `*Payment Intent:* \`${paymentIntent.id}\``
@@ -84,7 +83,7 @@ export async function approveCharge(req, res) {
     console.error('[approve-charge]', err)
     await postSlack(
       `🚨 *Charge Failed*\n` +
-      `*Customer:* ${entry.customer_name}\n` +
+      `*Business:* ${entry.customer_name}\n` +
       `*Amount:* $${dollars}\n` +
       `*Error:* \`${err.message}\``
     )

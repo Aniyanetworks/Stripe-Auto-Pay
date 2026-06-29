@@ -1,9 +1,6 @@
 import crypto from 'crypto'
+import Stripe from 'stripe'
 
-const GHL_API_BASE    = 'https://services.leadconnectorhq.com'
-const GHL_API_VERSION = '2021-07-28'
-
-// In-memory store — survives server restarts only if you redeploy; fine for approval flow
 export const chargeRequests = new Map()
 
 function cleanupExpired() {
@@ -25,40 +22,36 @@ async function postSlack(text) {
 }
 
 export async function createChargeRequest(req, res) {
-  const { contact_id, amount, description } = req.body
-  if (!contact_id || !amount || !description)
-    return res.status(400).json({ error: 'contact_id, amount (cents integer), description required' })
+  const { location_id, amount, description, name } = req.body
+  if (!location_id || !amount || !description)
+    return res.status(400).json({ error: 'location_id, amount (cents integer), description required' })
 
   if (!Number.isInteger(amount) || amount < 50)
     return res.status(400).json({ error: 'amount must be a whole-number of cents (min 50)' })
 
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+
   try {
-    const ghlRes = await fetch(`${GHL_API_BASE}/contacts/${contact_id}`, {
-      headers: { Authorization: `Bearer ${process.env.GHL_API_KEY}`, Version: GHL_API_VERSION },
-    })
-    if (!ghlRes.ok) throw new Error(`GHL ${ghlRes.status}: ${await ghlRes.text()}`)
+    // Find the Stripe Customer for this location by internal email
+    const internalEmail = `loc_${location_id}@billing.internal`
+    const list          = await stripe.customers.list({ email: internalEmail, limit: 1 })
 
-    const { contact } = await ghlRes.json()
-    const cf          = contact.customFields || []
-    console.log('[create-charge-request] customFields raw:', JSON.stringify(cf))
+    if (list.data.length === 0)
+      return res.status(400).json({ error: 'No saved payment method found for this location. Ask them to save their card first.' })
 
-    // GHL GET responses return fields with {id, value} — search by key OR by Stripe ID prefix
-    const getField = key => (cf.find(f => f.key === key) || {}).value
-    let customerId      = getField('stripe_customer_id')
-    let paymentMethodId = getField('stripe_payment_method_id')
+    const customer       = list.data[0]
+    const customerId     = customer.id
+    const paymentMethodId = customer.invoice_settings?.default_payment_method
 
-    // Fallback: GHL may return field id instead of key — match by Stripe value prefix
-    if (!customerId)
-      customerId      = (cf.find(f => typeof f.value === 'string' && f.value.startsWith('cus_')) || {}).value
     if (!paymentMethodId)
-      paymentMethodId = (cf.find(f => typeof f.value === 'string' && f.value.startsWith('pm_')) || {}).value
+      return res.status(400).json({ error: 'Customer has no default payment method saved yet.' })
 
-    console.log('[create-charge-request] customerId:', customerId, 'paymentMethodId:', paymentMethodId)
+    const businessName = name || customer.name || location_id
 
-    if (!customerId || !paymentMethodId)
-      return res.status(400).json({ error: 'No saved payment method found for this contact. Ask them to save their card first.' })
-
-    const customerName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'Customer'
+    // Update Stripe customer name if provided and not already set
+    if (name && !customer.name) {
+      await stripe.customers.update(customer.id, { name })
+    }
 
     cleanupExpired()
 
@@ -68,19 +61,11 @@ export async function createChargeRequest(req, res) {
     const dollars    = (amount / 100).toFixed(2)
 
     chargeRequests.set(token, {
-      contact_id,
+      location_id,
       customer_id:       customerId,
       payment_method_id: paymentMethodId,
-      customer_name:     customerName,
-      customer_email:    contact.email   || undefined,
-      customer_phone:    contact.phone   || undefined,
-      customer_address: {
-        line1:       contact.address1   || '',
-        city:        contact.city       || '',
-        state:       contact.state      || '',
-        postal_code: contact.postalCode || '',
-        country:     contact.country    || 'US',
-      },
+      customer_name:     businessName,
+      customer_address:  { country: 'US' },
       amount,
       description,
       expiresAt: Date.now() + 48 * 60 * 60 * 1000,
@@ -89,7 +74,7 @@ export async function createChargeRequest(req, res) {
 
     await postSlack(
       `💳 *Charge Request — Approval Needed*\n` +
-      `*Customer:* ${customerName}\n` +
+      `*Business:* ${businessName}\n` +
       `*Amount:* $${dollars}\n` +
       `*Description:* ${description}\n\n` +
       `<${approveUrl}|👉 Click here to Approve or Reject>`
