@@ -284,8 +284,66 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
 .footer a { color: var(--brand-accent); text-decoration: none; }
 .footer a:hover { text-decoration: underline; }
 
+/* ===== CHARGE APPROVAL PAGE ===== */
+.charge-summary {
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.charge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.charge-row:last-child { border-bottom: none; }
+
+.charge-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.charge-value {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  text-align: right;
+  max-width: 60%;
+}
+
+.charge-amount {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--brand-primary);
+}
+
+.approve-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.approve-actions .btn { margin-top: 0; }
+
+.btn-approve {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.30);
+}
+
+.btn-reject {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.30);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 520px) {
   .card { padding: 2rem 1.25rem; border-radius: var(--radius-md); }
   h1    { font-size: 1.3rem; }
+  .approve-actions { flex-direction: column; }
 }
