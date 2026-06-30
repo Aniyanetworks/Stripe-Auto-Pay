@@ -136,7 +136,7 @@ export default function Approve() {
       </div>
 
       <div className="footer">
-        &copy; {new Date().getFullYear()} Aniya Network Solutions. All rights reserved.
+        &copy; {new Date().getFullYear()} Zeal Media Solutions. All rights reserved.
       </div>
     </div>
   )

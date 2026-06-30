@@ -34,8 +34,8 @@ export default function Success() {
 
       <div className="footer">
         Questions?{' '}
-        <a href="mailto:info@aniyanetworksolutions.com">
-          info@aniyanetworksolutions.com
+        <a href="mailto:info@zealmediasolutions.com">
+          info@zealmediasolutions.com
         </a>
       </div>
     </div>

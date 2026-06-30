@@ -133,7 +133,7 @@ function CheckoutForm({ businessRecordId, customerId, clientSecret }) {
 
       <p className="mandate">
         By saving your card and submitting this form, you authorise{' '}
-        <strong>Aniya Network Solutions</strong> to charge your card for services
+        <strong>Zeal Media Solutions</strong> to charge your card for services
         rendered at amounts agreed upon during your appointment, without requiring
         your presence for each transaction. You may revoke this authorisation at
         any time by contacting us directly.
@@ -235,7 +235,7 @@ export default function Onboard() {
       </div>
 
       <div className="footer">
-        &copy; {new Date().getFullYear()} Aniya Network Solutions. All rights reserved.
+        &copy; {new Date().getFullYear()} Zeal Media Solutions. All rights reserved.
       </div>
     </div>
   )

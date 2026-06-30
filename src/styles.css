@@ -1,4 +1,4 @@
-/* ===== ANIYA NETWORK SOLUTIONS — BRAND TOKENS ===== */
+/* ===== Zeal Media Solutions — BRAND TOKENS ===== */
 :root {
   --brand-primary:   #6C3FC5;
   --brand-secondary: #4F2D91;
@@ -62,29 +62,14 @@ body {
 /* ===== LOGO SLOT ===== */
 .logo-slot {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
   margin-bottom: 2rem;
 }
 
-.logo-slot img     { height: 40px; width: auto; }
-
-.brand-name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--brand-primary);
-  letter-spacing: -0.02em;
-}
-
-.logo-placeholder {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
-  display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  font-weight: 800;
-  font-size: 1.1rem;
-  flex-shrink: 0;
+.brand-logo {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
 }
 
 /* ===== HEADINGS ===== */
