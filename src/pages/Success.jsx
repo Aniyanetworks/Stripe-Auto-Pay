@@ -5,9 +5,7 @@ export default function Success() {
   return (
     <div className="page-wrapper">
       <div className="card" style={{ textAlign: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          <Logo />
-        </div>
+        <Logo />
 
         {/* Success icon */}
         <div className="success-icon" aria-hidden="true">
