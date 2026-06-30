@@ -77,6 +77,7 @@ function CheckoutForm({ businessRecordId, customerId, clientSecret }) {
           business_record_id: businessRecordId,
           payment_method_id:  paymentMethodId,
           customer_id:        customerId,
+          cardholder_name:    cardholderName.trim(),
         }),
       })
 
