@@ -19,7 +19,7 @@ export default function Approve() {
       return
     }
 
-    fetch(`/api/charge-request/${token}`)
+    fetch(`/api/get-charge-request?token=${token}`)
       .then(r => r.json())
       .then(data => {
         if (data.error) { setMessage(data.error); setStatus('error'); return }

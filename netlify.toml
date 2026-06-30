@@ -11,13 +11,7 @@
   port       = 8888
   targetPort = 5173
 
-# Path-param route for charge-request (Approve page uses /api/charge-request/:token)
-[[redirects]]
-  from   = "/api/charge-request/:token"
-  to     = "/.netlify/functions/get-charge-request?token=:token"
-  status = 200
-
-# All other /api/* calls route to matching Netlify Function
+# All /api/* calls route to matching Netlify Function
 [[redirects]]
   from   = "/api/*"
   to     = "/.netlify/functions/:splat"
