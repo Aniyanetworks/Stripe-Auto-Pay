@@ -1,4 +1,4 @@
-import logo from '../logo.jpeg'
+import logo from '../zeal_logo.png'
 
 export default function Logo() {
   return (

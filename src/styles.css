@@ -326,9 +326,121 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.30);
 }
 
+/* ===== DARK CARD THEME ===== */
+.card {
+  background: #0d0d0d;
+}
+
+.card h1 {
+  color: #ffffff;
+}
+
+.card .subtitle,
+.card p {
+  color: #a0a0b8;
+}
+
+.card p strong {
+  color: #ffffff;
+}
+
+.card label {
+  color: #7070a0;
+}
+
+.card input[type="text"],
+.card input[type="email"] {
+  background: #1a1a2a;
+  border-color: #2e2e4a;
+  color: #ffffff;
+}
+
+.card input[type="text"]::placeholder,
+.card input[type="email"]::placeholder {
+  color: #55557a;
+}
+
+.card input:focus {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 3px rgba(155, 111, 224, 0.18);
+}
+
+.card .card-element-wrapper {
+  background: #1a1a2a;
+  border-color: #2e2e4a;
+}
+
+.card .card-element-wrapper:focus-within {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 3px rgba(155, 111, 224, 0.18);
+}
+
+.card .mandate {
+  background: rgba(108, 63, 197, 0.15);
+  border-left-color: var(--brand-accent);
+  color: #a090c8;
+}
+
+.card .mandate strong {
+  color: #e0d4ff;
+}
+
+.card .charge-summary {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #2e2e4a;
+}
+
+.card .charge-row {
+  border-bottom-color: #2e2e4a;
+}
+
+.card .charge-label {
+  color: #606080;
+}
+
+.card .charge-value {
+  color: #e8e8ff;
+}
+
+.card .charge-amount {
+  color: var(--brand-accent);
+}
+
+.card .divider {
+  border-top-color: #2e2e4a;
+}
+
+.card .status-msg.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.card .status-msg.info {
+  background: rgba(108, 63, 197, 0.15);
+  color: #c4b5fd;
+}
+
+.card .status-msg.success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+}
+
+.card .error-msg {
+  color: #fca5a5;
+}
+
+.card .secure-badge {
+  color: #55557a;
+}
+
+.card .secure-badge svg {
+  fill: #10b981;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 520px) {
-  .card { padding: 2rem 1.25rem; border-radius: var(--radius-md); }
+  .card { padding: 2rem 1.25rem; border-radius: var(--radius-md); 
+   }
   h1    { font-size: 1.3rem; }
   .approve-actions { flex-direction: column; }
 }
