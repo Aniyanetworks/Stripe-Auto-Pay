@@ -117,11 +117,11 @@ function CheckoutForm({ businessRecordId, customerId, clientSecret }) {
               style: {
                 base: {
                   fontSize:        '16px',
-                  color:           '#1a1a2e',
+                  color:           '#ffffff',
                   fontFamily:      'Inter, -apple-system, sans-serif',
-                  '::placeholder': { color: '#9090b0' },
+                  '::placeholder': { color: '#55557a' },
                 },
-                invalid: { color: '#ef4444', iconColor: '#ef4444' },
+                invalid: { color: '#fca5a5', iconColor: '#fca5a5' },
               },
               hidePostalCode: false,
             }}

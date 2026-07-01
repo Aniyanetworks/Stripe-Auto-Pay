@@ -349,7 +349,8 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
 .card input[type="text"],
-.card input[type="email"] {
+.card input[type="email"],
+.card input {
   background: #1a1a2a;
   border-color: #2e2e4a;
   color: #ffffff;
