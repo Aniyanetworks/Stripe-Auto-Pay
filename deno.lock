@@ -11,7 +11,15 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
-        "npm:stripe@14"
+        "npm:@stripe/react-stripe-js@^2.4.0",
+        "npm:@stripe/stripe-js@3",
+        "npm:@supabase/supabase-js@^2.39.0",
+        "npm:@vitejs/plugin-react@^4.2.0",
+        "npm:react-dom@^18.2.0",
+        "npm:react-router-dom@^6.21.0",
+        "npm:react@^18.2.0",
+        "npm:stripe@14",
+        "npm:vite@5"
       ]
     }
   }

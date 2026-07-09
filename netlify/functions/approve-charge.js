@@ -64,6 +64,14 @@ export const handler = async (event) => {
         .update({ status: 'charged', payment_intent_id: paymentIntent.id })
         .eq('token', token)
 
+      // Mark the individual appointments in this batch as charged
+      if (entry.appointment_ids?.length) {
+        await supabase
+          .from('pending_appointments')
+          .update({ status: 'charged' })
+          .in('id', entry.appointment_ids)
+      }
+
       await postSlack(
         `✅ *Charge Approved & Processed*\n` +
         `*Business:* ${entry.customer_name}\n` +

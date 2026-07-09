@@ -1,7 +1,5 @@
-import crypto from 'crypto'
 import Stripe from 'stripe'
 import { supabase } from './lib/supabase.js'
-import { postSlack } from './lib/slack.js'
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST')
@@ -22,7 +20,7 @@ export const handler = async (event) => {
     const list          = await stripe.customers.list({ email: internalEmail, limit: 1 })
 
     if (list.data.length === 0)
-      return { statusCode: 400, body: JSON.stringify({ error: 'No saved payment method found for this location. Ask them to save their card first.' }) }
+      return { statusCode: 400, body: JSON.stringify({ error: 'No saved payment method found for this location.' }) }
 
     const customer        = list.data[0]
     const customerId      = customer.id
@@ -31,44 +29,29 @@ export const handler = async (event) => {
     if (!paymentMethodId)
       return { statusCode: 400, body: JSON.stringify({ error: 'Customer has no default payment method saved yet.' }) }
 
-    const businessName = name || customer.name || location_id
+    const customerName = name || customer.name || location_id
 
     if (name && !customer.name)
       await stripe.customers.update(customerId, { name })
 
-    const token      = crypto.randomUUID()
-    const siteUrl    = (process.env.URL || process.env.SITE_URL || 'http://localhost:8888').replace(/\/$/, '')
-    const approveUrl = `${siteUrl}/approve?token=${token}`
-    const dollars    = (amount / 100).toFixed(2)
-    const expiresAt  = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
-
-    const { error: dbError } = await supabase.from('charge_requests').insert({
-      token,
+    // Queue in Supabase — no Slack, no charge yet
+    const { error: dbError } = await supabase.from('pending_appointments').insert({
       location_id,
       customer_id:       customerId,
       payment_method_id: paymentMethodId,
-      customer_name:     businessName,
-      customer_address:  { country: 'US' },
+      customer_name:     customerName,
       amount,
       description,
-      status:            'pending',
-      expires_at:        expiresAt,
+      status: 'pending',
     })
 
     if (dbError) throw new Error(`DB insert failed: ${dbError.message}`)
 
-    await postSlack(
-      `💳 *Charge Request — Approval Needed*\n` +
-      `*Business:* ${businessName}\n` +
-      `*Amount:* $${dollars}\n` +
-      `*Description:* ${description}\n\n` +
-      `<${approveUrl}|👉 Click here to Approve or Reject>`
-    )
-
+    console.log(`[create-charge-request] queued — location=${location_id} amount=${amount}`)
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ success: true, token, approve_url: approveUrl }),
+      body: JSON.stringify({ success: true, queued: true }),
     }
   } catch (err) {
     console.error('[create-charge-request]', err)
