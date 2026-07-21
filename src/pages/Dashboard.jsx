@@ -84,6 +84,7 @@ export default function Dashboard() {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
   const [filter, setFilter]       = useState('all')
+  const [search, setSearch]       = useState('')
   const [deleting, setDeleting]   = useState(false)
   const [retrying, setRetrying]   = useState(false)
   const [confirmMode, setConfirmMode]     = useState(null) // 'single' | 'bulk'
@@ -225,9 +226,15 @@ export default function Dashboard() {
     })
   })() : []
 
-  const filteredCharges = deduped.filter(c =>
-    filter === 'all' || effectiveStatus(c) === filter
-  )
+  const q = search.trim().toLowerCase()
+  const filteredCharges = deduped.filter(c => {
+    if (filter !== 'all' && effectiveStatus(c) !== filter) return false
+    if (!q) return true
+    return (
+      (c.customer_name || '').toLowerCase().includes(q) ||
+      (c.location_id   || '').toLowerCase().includes(q)
+    )
+  })
 
   const allSelected  = filteredCharges.length > 0 && selectedIds.size === filteredCharges.length
   const someSelected = selectedIds.size > 0
@@ -284,12 +291,19 @@ export default function Dashboard() {
           <div className="db-section">
             <div className="db-section-header">
               <div className="db-section-title">Charge History</div>
+              <input
+                className="table-search"
+                type="text"
+                placeholder="Search name or location…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
               <div className="filter-tabs">
                 {STATUS_FILTERS.map(f => (
                   <button
                     key={f}
                     className={`filter-tab ${filter === f ? 'active' : ''}`}
-                    onClick={() => { setFilter(f); setSelectedIds(new Set()) }}
+                    onClick={() => { setFilter(f); setSelectedIds(new Set()); setSearch('') }}
                   >
                     {f.charAt(0).toUpperCase() + f.slice(1)}
                   </button>
