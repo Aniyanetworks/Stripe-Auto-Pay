@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import Logo from '../components/Logo'
 import ConfirmModal from '../components/ConfirmModal'
+import ManualChargeModal from '../components/ManualChargeModal'
 
 const fmt     = cents => `$${(cents / 100).toFixed(2)}`
 const fmtDate = iso   => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -38,7 +39,8 @@ export default function Dashboard() {
   const [filter, setFilter]       = useState('all')
   const [deleting, setDeleting]   = useState(false)
   const [retrying, setRetrying]   = useState(false)
-  const [confirmMode, setConfirmMode] = useState(null) // 'single' | 'bulk'
+  const [confirmMode, setConfirmMode]     = useState(null) // 'single' | 'bulk'
+  const [showChargeModal, setShowChargeModal] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const navigate = useNavigate()
 
@@ -188,6 +190,9 @@ export default function Dashboard() {
       <header className="db-header">
         <Logo />
         <div className="db-header-actions">
+          <button className="btn-ghost btn-ghost-primary" onClick={() => setShowChargeModal(true)}>
+            + New Charge
+          </button>
           <button className="btn-ghost" onClick={loadData} disabled={loading}>
             {loading ? '...' : '↻ Refresh'}
           </button>
@@ -346,6 +351,14 @@ export default function Dashboard() {
           </div>
         </>
       ) : null}
+
+      {showChargeModal && (
+        <ManualChargeModal
+          customers={data?.customers ?? []}
+          onClose={() => setShowChargeModal(false)}
+          onSuccess={loadData}
+        />
+      )}
 
       {confirmMode && (
         <ConfirmModal

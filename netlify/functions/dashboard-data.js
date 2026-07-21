@@ -44,10 +44,18 @@ export const handler = async (event) => {
       c.status === 'pending' && new Date(c.expires_at) >= now
     ).length
 
-    const customerIds = new Set([
-      ...pending.map(a => a.location_id),
-      ...charges.map(c => c.location_id),
-    ])
+    // Distinct customers from all activity
+    const customerMap = new Map()
+    for (const a of pending) {
+      if (!customerMap.has(a.location_id))
+        customerMap.set(a.location_id, { location_id: a.location_id, customer_name: a.customer_name || a.location_id })
+    }
+    for (const c of charges) {
+      if (!customerMap.has(c.location_id))
+        customerMap.set(c.location_id, { location_id: c.location_id, customer_name: c.customer_name || c.location_id })
+    }
+    const customers   = [...customerMap.values()]
+    const customerIds = new Set(customerMap.keys())
 
     return {
       statusCode: 200,
@@ -61,6 +69,7 @@ export const handler = async (event) => {
         },
         pending,
         charges,
+        customers,
       }),
     }
   } catch (err) {
