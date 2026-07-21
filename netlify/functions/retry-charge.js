@@ -27,11 +27,8 @@ export const handler = async (event) => {
     if (fetchError || !entry)
       return { statusCode: 404, body: JSON.stringify({ error: 'Charge request not found' }) }
 
-    const isExpired = entry.status === 'pending' && new Date(entry.expires_at) < new Date()
-    const isFailed  = entry.status === 'failed'
-
-    if (!isExpired && !isFailed)
-      return { statusCode: 409, body: JSON.stringify({ error: 'Only failed or expired charges can be retried' }) }
+    if (entry.status !== 'failed')
+      return { statusCode: 409, body: JSON.stringify({ error: 'Only failed charges can be retried' }) }
 
     // Put appointments back into the pending queue so next daily-summary picks them up
     if (entry.appointment_ids?.length) {

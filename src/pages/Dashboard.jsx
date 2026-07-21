@@ -11,7 +11,6 @@ const fmtDate = iso   => new Date(iso).toLocaleDateString('en-US', { month: 'sho
 const STATUS_BADGE = {
   batched:    { label: 'Batched',    cls: 'badge-batched' },
   pending:    { label: 'Pending',    cls: 'badge-pending' },
-  expired:    { label: 'Expired',    cls: 'badge-expired' },
   processing: { label: 'Processing', cls: 'badge-processing' },
   charged:    { label: 'Charged',    cls: 'badge-charged' },
   failed:     { label: 'Failed',     cls: 'badge-failed' },
@@ -25,12 +24,11 @@ function Badge({ status }) {
 }
 
 function effectiveStatus(c) {
-  if (c.status === 'pending' && new Date(c.expires_at) < new Date()) return 'expired'
-  if (c.status === 'pending' && c.appointment_ids?.length)             return 'batched'
+  if (c.status === 'pending' && c.appointment_ids?.length) return 'batched'
   return c.status
 }
 
-const STATUS_FILTERS = ['all', 'batched', 'pending', 'expired', 'charged', 'failed', 'rejected', 'retried']
+const STATUS_FILTERS = ['all', 'batched', 'pending', 'charged', 'failed', 'rejected', 'retried']
 
 export default function Dashboard() {
   const [data, setData]           = useState(null)
@@ -39,9 +37,9 @@ export default function Dashboard() {
   const [filter, setFilter]       = useState('all')
   const [deleting, setDeleting]   = useState(false)
   const [retrying, setRetrying]   = useState(false)
-  const [confirmMode, setConfirmMode]     = useState(null) // 'single' | 'bulk'
+  const [confirmMode, setConfirmMode]   = useState(null) // 'single' | 'bulk'
   const [showChargeModal, setShowChargeModal] = useState(false)
-  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [selectedIds, setSelectedIds]   = useState(new Set())
   const navigate = useNavigate()
 
   useEffect(() => { loadData() }, [])
@@ -145,10 +143,9 @@ export default function Dashboard() {
     const retryable = [...selectedIds].filter(id => {
       const c = data.charges.find(x => x.id === id)
       if (!c) return false
-      const s = effectiveStatus(c)
-      return s === 'failed' || s === 'expired'
+      return effectiveStatus(c) === 'failed'
     })
-    if (retryable.length === 0) { alert('No failed or expired charges in selection.'); return }
+    if (retryable.length === 0) { alert('No failed charges in selection.'); return }
     setRetrying(true)
     const session = await getSession()
     await Promise.allSettled(
@@ -321,7 +318,7 @@ export default function Dashboard() {
                                 Approve →
                               </a>
                             )}
-                            {(status === 'failed' || status === 'expired') && (
+                            {status === 'failed' && (
                               <button
                                 className="btn-retry"
                                 onClick={() => handleRetrySingle(c.id)}

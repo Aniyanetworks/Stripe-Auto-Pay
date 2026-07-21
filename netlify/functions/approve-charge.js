@@ -18,10 +18,7 @@ export const handler = async (event) => {
       .single()
 
     if (error || !entry)
-      return { statusCode: 404, body: JSON.stringify({ error: 'Charge request not found or expired' }) }
-
-    if (new Date(entry.expires_at) < new Date())
-      return { statusCode: 410, body: JSON.stringify({ error: 'This charge request has expired' }) }
+      return { statusCode: 404, body: JSON.stringify({ error: 'Charge request not found' }) }
 
     if (entry.status !== 'pending')
       return { statusCode: 409, body: JSON.stringify({ error: `Charge already ${entry.status}` }) }

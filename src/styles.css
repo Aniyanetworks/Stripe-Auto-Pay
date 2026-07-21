@@ -750,6 +750,35 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
 .badge-rejected   { background: rgba(107,114,128,0.13); color: #9ca3af; }
 .badge-retried    { background: rgba(59,130,246,0.13);  color: #60a5fa; }
 
+.btn-extend {
+  background: transparent;
+  border: 1px solid #2e2e4a;
+  color: #55557a;
+  font-size: 0.8rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-extend:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
+
+.expiry-current {
+  padding: 0.5rem 0.75rem;
+  background: #1a1a2a;
+  border: 1px solid #2e2e4a;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+.expiry-expired { color: #fb923c; }
+.expiry-valid   { color: #34d399; }
+
 .btn-retry {
   background: transparent;
   border: 1px solid #1e3a2a;
