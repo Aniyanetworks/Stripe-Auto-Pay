@@ -17,12 +17,26 @@ export const handler = async (event) => {
   if (!id)
     return { statusCode: 400, body: JSON.stringify({ error: 'id required' }) }
 
-  const { data: entry } = await supabase.from('charge_requests').select('status').eq('id', id).single()
+  const { data: entry } = await supabase
+    .from('charge_requests')
+    .select('status, appointment_ids')
+    .eq('id', id)
+    .single()
+
   if (!entry)
     return { statusCode: 404, body: JSON.stringify({ error: 'Not found' }) }
 
   if (entry.status === 'processing')
     return { statusCode: 409, body: JSON.stringify({ error: 'Cannot delete a charge that is currently processing' }) }
+
+  // Reset linked appointments back to pending so they re-queue on next daily-summary
+  if (entry.appointment_ids?.length) {
+    await supabase
+      .from('pending_appointments')
+      .update({ status: 'pending', batch_token: null })
+      .in('id', entry.appointment_ids)
+      .eq('status', 'batched')
+  }
 
   const { error } = await supabase.from('charge_requests').delete().eq('id', id)
   if (error)
