@@ -337,6 +337,7 @@ export default function Dashboard() {
                         />
                       </th>
                       <th>Customer</th>
+                      <th>Location</th>
                       <th>Amount</th>
                       <th>Description</th>
                       <th>Status</th>
@@ -359,6 +360,7 @@ export default function Dashboard() {
                             />
                           </td>
                           <td>{c.customer_name || c.location_id}</td>
+                          <td className="td-muted" style={{ fontSize: '0.78rem' }}>{c.location_id}</td>
                           <td>{fmt(c.amount)}</td>
                           <td className="td-desc">{c.description}</td>
                           <td><Badge status={status} /></td>
