@@ -294,7 +294,7 @@ export default function Dashboard() {
               <input
                 className="table-search"
                 type="text"
-                placeholder="Search name or location…"
+                placeholder="Search by name…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
