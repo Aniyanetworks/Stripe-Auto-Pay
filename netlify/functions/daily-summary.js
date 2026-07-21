@@ -12,6 +12,25 @@ export const handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'location_id required' }) }
 
   try {
+    // Guard: don't create a duplicate batch if one already exists for today (ET)
+    const todayET    = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) // YYYY-MM-DD
+    const dayStart   = new Date(`${todayET}T00:00:00-05:00`).toISOString()
+    const { data: existing } = await supabase
+      .from('charge_requests')
+      .select('id, status')
+      .eq('location_id', location_id)
+      .gte('created_at', dayStart)
+      .in('status', ['pending', 'processing', 'charged'])
+      .limit(1)
+
+    if (existing?.length > 0) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ success: true, has_charges: false, message: 'Batch already created for today.' }),
+      }
+    }
+
     // Fetch all pending appointments for this location
     const { data: appointments, error } = await supabase
       .from('pending_appointments')

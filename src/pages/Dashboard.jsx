@@ -8,6 +8,7 @@ const fmt     = cents => `$${(cents / 100).toFixed(2)}`
 const fmtDate = iso   => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 const STATUS_BADGE = {
+  batched:    { label: 'Batched',    cls: 'badge-batched' },
   pending:    { label: 'Pending',    cls: 'badge-pending' },
   expired:    { label: 'Expired',    cls: 'badge-expired' },
   processing: { label: 'Processing', cls: 'badge-processing' },
@@ -24,10 +25,11 @@ function Badge({ status }) {
 
 function effectiveStatus(c) {
   if (c.status === 'pending' && new Date(c.expires_at) < new Date()) return 'expired'
+  if (c.status === 'pending' && c.appointment_ids?.length)             return 'batched'
   return c.status
 }
 
-const STATUS_FILTERS = ['all', 'pending', 'expired', 'charged', 'failed', 'rejected', 'retried']
+const STATUS_FILTERS = ['all', 'batched', 'pending', 'expired', 'charged', 'failed', 'rejected', 'retried']
 
 export default function Dashboard() {
   const [data, setData]           = useState(null)
@@ -161,9 +163,22 @@ export default function Dashboard() {
     await loadData()
   }
 
-  const filteredCharges = data?.charges.filter(c =>
+  // For 'retried' entries: keep only the most recent per location per day
+  const deduped = data ? (() => {
+    const seen = new Map()
+    return [...data.charges].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).filter(c => {
+      if (c.status !== 'retried') return true
+      const day = new Date(c.created_at).toDateString()
+      const key = `${c.location_id}|${day}`
+      if (seen.has(key)) return false
+      seen.set(key, true)
+      return true
+    })
+  })() : []
+
+  const filteredCharges = deduped.filter(c =>
     filter === 'all' || effectiveStatus(c) === filter
-  ) ?? []
+  )
 
   const allSelected  = filteredCharges.length > 0 && selectedIds.size === filteredCharges.length
   const someSelected = selectedIds.size > 0
@@ -296,7 +311,7 @@ export default function Dashboard() {
                           <td><Badge status={status} /></td>
                           <td className="td-muted">{fmtDate(c.created_at)}</td>
                           <td className="td-actions">
-                            {status === 'pending' && c.token && (
+                            {(status === 'pending' || status === 'batched') && c.token && (
                               <a className="table-link" href={`/approve?token=${c.token}`} target="_blank" rel="noreferrer">
                                 Approve →
                               </a>
