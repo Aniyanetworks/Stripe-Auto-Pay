@@ -576,6 +576,70 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
 .filter-tab:hover { border-color: var(--brand-accent); color: #a090c8; }
 .filter-tab.active { background: var(--brand-primary); border-color: var(--brand-primary); color: #ffffff; }
 
+/* Checkbox column */
+.th-check, .td-check {
+  width: 36px;
+  padding-right: 0 !important;
+}
+
+.row-check {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--brand-primary);
+  cursor: pointer;
+}
+
+.row-selected td { background: rgba(108,63,197,0.08); }
+
+/* Bulk action bar */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(108,63,197,0.1);
+  border: 1px solid rgba(108,63,197,0.25);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.bulk-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--brand-accent);
+  margin-right: 0.25rem;
+}
+
+.btn-bulk-delete {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #f87171;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-bulk-delete:hover:not(:disabled) { background: rgba(239,68,68,0.22); border-color: #ef4444; }
+.btn-bulk-delete:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.bulk-clear {
+  background: transparent;
+  border: none;
+  color: #55557a;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 0.2rem 0.4rem;
+}
+
+.bulk-clear:hover { color: #a0a0b8; }
+
 .td-actions {
   display: flex;
   align-items: center;
@@ -635,6 +699,16 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
   vertical-align: middle;
 }
 
+.appt-count {
+  display: inline-block;
+  background: rgba(108,63,197,0.12);
+  color: var(--brand-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
 .td-desc {
   color: #a0a0b8;
   max-width: 260px;
@@ -673,6 +747,7 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
 .badge-charged    { background: rgba(16,185,129,0.13);  color: #34d399; }
 .badge-failed     { background: rgba(239,68,68,0.13);   color: #f87171; }
 .badge-rejected   { background: rgba(107,114,128,0.13); color: #9ca3af; }
+.badge-retried    { background: rgba(59,130,246,0.13);  color: #60a5fa; }
 
 .btn-retry {
   background: transparent;

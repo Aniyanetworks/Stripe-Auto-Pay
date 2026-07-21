@@ -4,8 +4,8 @@ import { supabase } from '../lib/supabaseClient'
 import Logo from '../components/Logo'
 import ConfirmModal from '../components/ConfirmModal'
 
-const fmt = cents => `$${(cents / 100).toFixed(2)}`
-const fmtDate = iso => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+const fmt     = cents => `$${(cents / 100).toFixed(2)}`
+const fmtDate = iso   => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 const STATUS_BADGE = {
   pending:    { label: 'Pending',    cls: 'badge-pending' },
@@ -14,6 +14,7 @@ const STATUS_BADGE = {
   charged:    { label: 'Charged',    cls: 'badge-charged' },
   failed:     { label: 'Failed',     cls: 'badge-failed' },
   rejected:   { label: 'Rejected',   cls: 'badge-rejected' },
+  retried:    { label: 'Requeued',   cls: 'badge-retried' },
 }
 
 function Badge({ status }) {
@@ -26,26 +27,27 @@ function effectiveStatus(c) {
   return c.status
 }
 
-const STATUS_FILTERS = ['all', 'pending', 'expired', 'charged', 'failed', 'rejected']
+const STATUS_FILTERS = ['all', 'pending', 'expired', 'charged', 'failed', 'rejected', 'retried']
 
 export default function Dashboard() {
-  const [data, setData]         = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState('')
-  const [filter, setFilter]     = useState('all')
-  const [deleting, setDeleting]       = useState(null)
-  const [retrying, setRetrying]       = useState(null)
-  const [confirmId, setConfirmId]     = useState(null)
-  const navigate                = useNavigate()
+  const [data, setData]           = useState(null)
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState('')
+  const [filter, setFilter]       = useState('all')
+  const [deleting, setDeleting]   = useState(false)
+  const [retrying, setRetrying]   = useState(false)
+  const [confirmMode, setConfirmMode] = useState(null) // 'single' | 'bulk'
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const navigate = useNavigate()
 
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
     setLoading(true)
     setError('')
+    setSelectedIds(new Set())
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { navigate('/login'); return }
-
     try {
       const res = await fetch('/api/dashboard-data', {
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -59,58 +61,112 @@ export default function Dashboard() {
     setLoading(false)
   }
 
+  async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     navigate('/login')
   }
 
-  async function handleDelete(id) {
-    setConfirmId(id)
+  // ── Selection ─────────────────────────────────────────────────────
+  function toggleRow(id) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (selectedIds.size === filteredCharges.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredCharges.map(c => c.id)))
+    }
+  }
+
+  // ── Single delete ─────────────────────────────────────────────────
+  function handleDeleteSingle(id) {
+    setSelectedIds(new Set([id]))
+    setConfirmMode('single')
+  }
+
+  // ── Bulk delete ───────────────────────────────────────────────────
+  function handleBulkDelete() {
+    setConfirmMode('bulk')
   }
 
   async function confirmDelete() {
-    const id = confirmId
-    setConfirmId(null)
-    setDeleting(id)
-    const { data: { session } } = await supabase.auth.getSession()
-    try {
-      const res = await fetch('/api/delete-charge', {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      })
-      const json = await res.json()
-      if (!res.ok) { alert(json.error); return }
-      setData(prev => ({ ...prev, charges: prev.charges.filter(c => c.id !== id) }))
-    } catch (e) {
-      alert(e.message)
-    }
-    setDeleting(null)
+    const ids = [...selectedIds]
+    setConfirmMode(null)
+    setDeleting(true)
+    const session = await getSession()
+    const results = await Promise.allSettled(
+      ids.map(id =>
+        fetch('/api/delete-charge', {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        })
+      )
+    )
+    const deleted = ids.filter((_, i) => results[i].status === 'fulfilled' && results[i].value.ok)
+    setData(prev => ({ ...prev, charges: prev.charges.filter(c => !deleted.includes(c.id)) }))
+    setSelectedIds(new Set())
+    setDeleting(false)
   }
 
-  async function handleRetry(id) {
-    setRetrying(id)
-    const { data: { session } } = await supabase.auth.getSession()
+  // ── Single retry ──────────────────────────────────────────────────
+  async function handleRetrySingle(id) {
+    setRetrying(true)
+    const session = await getSession()
     try {
-      const res = await fetch('/api/retry-charge', {
+      const res  = await fetch('/api/retry-charge', {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       })
       const json = await res.json()
       if (!res.ok) { alert(json.error); return }
-      // Refresh data so new token + status are reflected
       await loadData()
-    } catch (e) {
-      alert(e.message)
-    }
-    setRetrying(null)
+    } catch (e) { alert(e.message) }
+    setRetrying(false)
   }
 
-  const filteredCharges = data?.charges.filter(c => {
-    if (filter === 'all') return true
-    return effectiveStatus(c) === filter
-  }) ?? []
+  // ── Bulk retry ────────────────────────────────────────────────────
+  async function handleBulkRetry() {
+    const retryable = [...selectedIds].filter(id => {
+      const c = data.charges.find(x => x.id === id)
+      if (!c) return false
+      const s = effectiveStatus(c)
+      return s === 'failed' || s === 'expired'
+    })
+    if (retryable.length === 0) { alert('No failed or expired charges in selection.'); return }
+    setRetrying(true)
+    const session = await getSession()
+    await Promise.allSettled(
+      retryable.map(id =>
+        fetch('/api/retry-charge', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        })
+      )
+    )
+    setSelectedIds(new Set())
+    setRetrying(false)
+    await loadData()
+  }
+
+  const filteredCharges = data?.charges.filter(c =>
+    filter === 'all' || effectiveStatus(c) === filter
+  ) ?? []
+
+  const allSelected  = filteredCharges.length > 0 && selectedIds.size === filteredCharges.length
+  const someSelected = selectedIds.size > 0
 
   return (
     <div className="db-wrapper">
@@ -129,9 +185,7 @@ export default function Dashboard() {
       {error && <div className="db-error">{error}</div>}
 
       {loading && !data ? (
-        <div className="db-loading">
-          <div className="loading-spinner" />
-        </div>
+        <div className="db-loading"><div className="loading-spinner" /></div>
       ) : data ? (
         <>
           {/* Stats */}
@@ -158,37 +212,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Pending Queue */}
-          <div className="db-section">
-            <div className="db-section-title">Pending Appointments</div>
-            {data.pending.length === 0 ? (
-              <p className="db-empty">No pending appointments — queue is clear.</p>
-            ) : (
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Customer</th>
-                      <th>Amount</th>
-                      <th>Description</th>
-                      <th>Queued</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.pending.map(a => (
-                      <tr key={a.id}>
-                        <td>{a.customer_name || a.location_id}</td>
-                        <td>{fmt(a.amount)}</td>
-                        <td className="td-desc">{a.description}</td>
-                        <td className="td-muted">{fmtDate(a.created_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
           {/* Charge History */}
           <div className="db-section">
             <div className="db-section-header">
@@ -198,13 +221,38 @@ export default function Dashboard() {
                   <button
                     key={f}
                     className={`filter-tab ${filter === f ? 'active' : ''}`}
-                    onClick={() => setFilter(f)}
+                    onClick={() => { setFilter(f); setSelectedIds(new Set()) }}
                   >
                     {f.charAt(0).toUpperCase() + f.slice(1)}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Bulk action bar */}
+            {someSelected && (
+              <div className="bulk-bar">
+                <span className="bulk-count">{selectedIds.size} selected</span>
+                <button
+                  className="btn-retry"
+                  onClick={handleBulkRetry}
+                  disabled={retrying}
+                >
+                  {retrying ? '…' : '↺ Retry Selected'}
+                </button>
+                <button
+                  className="btn-bulk-delete"
+                  onClick={handleBulkDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? '…' : '✕ Delete Selected'}
+                </button>
+                <button className="bulk-clear" onClick={() => setSelectedIds(new Set())}>
+                  Clear
+                </button>
+              </div>
+            )}
+
             {filteredCharges.length === 0 ? (
               <p className="db-empty">No {filter === 'all' ? '' : filter + ' '}charge requests.</p>
             ) : (
@@ -212,6 +260,14 @@ export default function Dashboard() {
                 <table className="data-table">
                   <thead>
                     <tr>
+                      <th className="th-check">
+                        <input
+                          type="checkbox"
+                          className="row-check"
+                          checked={allSelected}
+                          onChange={toggleAll}
+                        />
+                      </th>
                       <th>Customer</th>
                       <th>Amount</th>
                       <th>Description</th>
@@ -222,9 +278,18 @@ export default function Dashboard() {
                   </thead>
                   <tbody>
                     {filteredCharges.map(c => {
-                      const status = effectiveStatus(c)
+                      const status   = effectiveStatus(c)
+                      const checked  = selectedIds.has(c.id)
                       return (
-                        <tr key={c.id}>
+                        <tr key={c.id} className={checked ? 'row-selected' : ''}>
+                          <td className="td-check">
+                            <input
+                              type="checkbox"
+                              className="row-check"
+                              checked={checked}
+                              onChange={() => toggleRow(c.id)}
+                            />
+                          </td>
                           <td>{c.customer_name || c.location_id}</td>
                           <td>{fmt(c.amount)}</td>
                           <td className="td-desc">{c.description}</td>
@@ -232,33 +297,27 @@ export default function Dashboard() {
                           <td className="td-muted">{fmtDate(c.created_at)}</td>
                           <td className="td-actions">
                             {status === 'pending' && c.token && (
-                              <a
-                                className="table-link"
-                                href={`/approve?token=${c.token}`}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
+                              <a className="table-link" href={`/approve?token=${c.token}`} target="_blank" rel="noreferrer">
                                 Approve →
                               </a>
                             )}
                             {(status === 'failed' || status === 'expired') && (
                               <button
                                 className="btn-retry"
-                                onClick={() => handleRetry(c.id)}
-                                disabled={retrying === c.id}
-                                title="Reset to pending"
+                                onClick={() => handleRetrySingle(c.id)}
+                                disabled={retrying}
                               >
-                                {retrying === c.id ? '…' : '↺ Retry'}
+                                {retrying ? '…' : '↺ Retry'}
                               </button>
                             )}
                             {status !== 'processing' && (
                               <button
                                 className="btn-delete"
-                                onClick={() => handleDelete(c.id)}
-                                disabled={deleting === c.id}
+                                onClick={() => handleDeleteSingle(c.id)}
+                                disabled={deleting}
                                 title="Delete"
                               >
-                                {deleting === c.id ? '…' : '✕'}
+                                {deleting ? '…' : '✕'}
                               </button>
                             )}
                           </td>
@@ -273,11 +332,15 @@ export default function Dashboard() {
         </>
       ) : null}
 
-      {confirmId && (
+      {confirmMode && (
         <ConfirmModal
-          message="Delete this charge request? This cannot be undone."
+          message={
+            confirmMode === 'bulk'
+              ? `Delete ${selectedIds.size} charge request${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`
+              : 'Delete this charge request? This cannot be undone.'
+          }
           onConfirm={confirmDelete}
-          onCancel={() => setConfirmId(null)}
+          onCancel={() => setConfirmMode(null)}
         />
       )}
     </div>
