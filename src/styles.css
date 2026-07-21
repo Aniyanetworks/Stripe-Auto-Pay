@@ -568,9 +568,10 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
   border-radius: var(--radius-sm);
   color: #e0e0ff;
   font-size: 0.82rem;
-  padding: 0.35rem 0.75rem;
+  padding: 0.3rem 0.65rem;
   outline: none;
-  width: 220px;
+  width: 190px;
+  flex-shrink: 0;
   transition: border-color 0.15s;
 }
 .table-search::placeholder { color: #55557a; }
