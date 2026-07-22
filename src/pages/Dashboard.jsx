@@ -291,13 +291,14 @@ export default function Dashboard() {
           <div className="db-section">
             <div className="db-section-header">
               <div className="db-section-title">Charge History</div>
-              <input
-                className="table-search"
-                type="text"
-                placeholder="Search name or location…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+              <div className="db-section-controls">
+                <input
+                  className="table-search"
+                  type="text"
+                  placeholder="Search name or location…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
               <div className="filter-tabs">
                 {STATUS_FILTERS.map(f => (
                   <button
@@ -308,6 +309,7 @@ export default function Dashboard() {
                     {f.charAt(0).toUpperCase() + f.slice(1)}
                   </button>
                 ))}
+              </div>
               </div>
             </div>
 

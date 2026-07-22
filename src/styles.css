@@ -562,16 +562,22 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
   color: #606080;
 }
 
+.db-section-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .table-search {
   background: #1a1a2a;
-  border: 1.5px solid #2e2e4a;
+  border: 1px solid #2e2e4a;
   border-radius: var(--radius-sm);
   color: #e0e0ff;
-  font-size: 0.9rem;
-  padding: 0.55rem 0.9rem;
+  font-size: 0.78rem;
+  padding: 0.28rem 0.65rem;
   outline: none;
-  width: 220px;
-  flex-shrink: 0;
+  width: 180px;
   transition: border-color 0.15s;
 }
 .table-search::placeholder { color: #45455a; }
