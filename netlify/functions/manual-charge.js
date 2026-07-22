@@ -18,7 +18,7 @@ export const handler = async (event) => {
     if (authError || !user)
       return { statusCode: 401, body: JSON.stringify({ error: 'Invalid or expired session' }) }
 
-    const { location_id, amount, description } = JSON.parse(event.body || '{}')
+    const { location_id, stripe_customer_id, amount, description } = JSON.parse(event.body || '{}')
 
     if (!location_id || !amount || !description)
       return { statusCode: 400, body: JSON.stringify({ error: 'location_id, amount, description required' }) }
@@ -26,14 +26,22 @@ export const handler = async (event) => {
     if (!ALLOWED_AMOUNTS.includes(amount))
       return { statusCode: 400, body: JSON.stringify({ error: 'Amount must be $250, $500, or $1000' }) }
 
-    const stripe         = new Stripe(process.env.STRIPE_SECRET_KEY)
-    const internalEmail  = `loc_${location_id}@billing.internal`
-    const list           = await stripe.customers.list({ email: internalEmail, limit: 1 })
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
-    if (list.data.length === 0)
-      return { statusCode: 404, body: JSON.stringify({ error: 'No Stripe customer found for this location.' }) }
-
-    const customer        = list.data[0]
+    let customer
+    if (stripe_customer_id) {
+      // Direct Stripe customer ID — fetch it straight away
+      customer = await stripe.customers.retrieve(stripe_customer_id)
+      if (!customer || customer.deleted)
+        return { statusCode: 404, body: JSON.stringify({ error: 'Stripe customer not found.' }) }
+    } else {
+      // Legacy fallback: look up by internal billing email
+      const internalEmail = `${location_id}@billing.internal`
+      const list          = await stripe.customers.list({ email: internalEmail, limit: 1 })
+      if (list.data.length === 0)
+        return { statusCode: 404, body: JSON.stringify({ error: 'No Stripe customer found for this location.' }) }
+      customer = list.data[0]
+    }
     const paymentMethodId = customer.invoice_settings?.default_payment_method
 
     if (!paymentMethodId)

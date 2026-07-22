@@ -8,7 +8,7 @@ const AMOUNTS = [
 ]
 
 export default function ManualChargeModal({ customers, onClose, onSuccess }) {
-  const [locationId, setLocationId]   = useState('')
+  const [selected, setSelected]       = useState(null) // full customer object
   const [amount, setAmount]           = useState(null)
   const [description, setDescription] = useState('')
   const [loading, setLoading]         = useState(false)
@@ -18,7 +18,7 @@ export default function ManualChargeModal({ customers, onClose, onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!locationId) { setError('Select a customer.'); return }
+    if (!selected)   { setError('Select a customer.'); return }
     if (!amount)     { setError('Select an amount.'); return }
     setError('')
     setLoading(true)
@@ -28,7 +28,12 @@ export default function ManualChargeModal({ customers, onClose, onSuccess }) {
       const res  = await fetch('/api/manual-charge', {
         method:  'POST',
         headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ location_id: locationId, amount, description: description.trim() || 'Manual charge' }),
+        body:    JSON.stringify({
+          location_id:        selected.location_id,
+          stripe_customer_id: selected.stripe_customer_id,
+          amount,
+          description: description.trim() || 'Manual charge',
+        }),
       })
       const json = await res.json()
       if (!res.ok) { setError(json.error); return }
@@ -85,13 +90,13 @@ export default function ManualChargeModal({ customers, onClose, onSuccess }) {
                 <label className="mc-label">Customer</label>
                 <select
                   className="mc-select"
-                  value={locationId}
-                  onChange={e => setLocationId(e.target.value)}
+                  value={selected?.stripe_customer_id || ''}
+                  onChange={e => setSelected(customers.find(c => c.stripe_customer_id === e.target.value) || null)}
                   required
                 >
                   <option value="">— Select customer —</option>
                   {customers.map(c => (
-                    <option key={c.location_id} value={c.location_id}>
+                    <option key={c.stripe_customer_id} value={c.stripe_customer_id}>
                       {c.customer_name}
                     </option>
                   ))}

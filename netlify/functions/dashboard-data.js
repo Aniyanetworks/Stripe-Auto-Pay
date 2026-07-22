@@ -61,20 +61,21 @@ export const handler = async (event) => {
       c.status === 'pending' && new Date(c.expires_at) >= now
     ).length
 
-    // Build customers from Stripe — extract location_id from billing email (loc_<id>@billing.internal)
+    // Build customers from Stripe — all customers, regardless of email format
     const customerMap = new Map()
     for (const sc of stripeCustomers) {
       const email = sc.email || ''
-      const match = email.match(/^loc_(.+)@billing\.internal$/)
-      const location_id = match ? sc.email.replace('@billing.internal', '') : null
-      if (!location_id) continue
-      customerMap.set(location_id, {
+      const billingMatch = email.match(/^(loc_.+)@billing\.internal$/)
+      // Use loc_<id> as location_id if present, otherwise fall back to Stripe customer ID
+      const location_id = billingMatch ? billingMatch[1] : sc.id
+      const customer_name = sc.name || sc.email || sc.id
+      customerMap.set(sc.id, {
         location_id,
-        customer_name: sc.name || location_id,
+        customer_name,
         stripe_customer_id: sc.id,
       })
     }
-    const customers   = [...customerMap.values()].sort((a, b) =>
+    const customers = [...customerMap.values()].sort((a, b) =>
       a.customer_name.localeCompare(b.customer_name)
     )
     const customerIds = new Set(customerMap.keys())
