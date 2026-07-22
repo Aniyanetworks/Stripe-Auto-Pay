@@ -299,17 +299,17 @@ export default function Dashboard() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
-              <div className="filter-tabs">
-                {STATUS_FILTERS.map(f => (
-                  <button
-                    key={f}
-                    className={`filter-tab ${filter === f ? 'active' : ''}`}
-                    onClick={() => { setFilter(f); setSelectedIds(new Set()); setSearch('') }}
-                  >
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
-                  </button>
-                ))}
-              </div>
+                <div className="filter-tabs">
+                  {STATUS_FILTERS.map(f => (
+                    <button
+                      key={f}
+                      className={`filter-tab ${filter === f ? 'active' : ''}`}
+                      onClick={() => { setFilter(f); setSelectedIds(new Set()); setSearch('') }}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
