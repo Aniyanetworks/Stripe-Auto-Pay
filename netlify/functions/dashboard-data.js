@@ -75,10 +75,10 @@ export const handler = async (event) => {
         stripe_customer_id: sc.id,
       })
     }
-    const customers = [...customerMap.values()].sort((a, b) =>
-      a.customer_name.localeCompare(b.customer_name)
-    )
-    const customerIds = new Set(customerMap.keys())
+    const customers = [...customerMap.values()]
+      .filter(c => c.location_id?.startsWith('loc_'))
+      .sort((a, b) => a.customer_name.localeCompare(b.customer_name))
+    const customerIds = new Set(customers.map(c => c.location_id))
 
     return {
       statusCode: 200,
