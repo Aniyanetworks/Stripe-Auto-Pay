@@ -506,6 +506,14 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
   border-radius: var(--radius-md);
   padding: 1.25rem 1.5rem;
 }
+.stat-card-clickable {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.stat-card-clickable:hover {
+  border-color: #7c3aed;
+  background: #12102a;
+}
 
 .stat-label {
   font-size: 0.72rem;

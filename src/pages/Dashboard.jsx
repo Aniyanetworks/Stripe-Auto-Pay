@@ -30,6 +30,55 @@ function effectiveStatus(c) {
 
 const STATUS_FILTERS = ['all', 'batched', 'pending', 'charged', 'failed', 'rejected', 'retried']
 
+function CustomerListModal({ customers, onClose }) {
+  const [search, setSearch] = useState('')
+  const filtered = customers.filter(c =>
+    c.customer_name.toLowerCase().includes(search.toLowerCase())
+  )
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-box modal-lg" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <h2 className="modal-title" style={{ margin: 0 }}>Stripe Customers ({customers.length})</h2>
+          <button className="btn-ghost" onClick={onClose} style={{ padding: '0.25rem 0.75rem' }}>✕</button>
+        </div>
+        <input
+          className="mc-input"
+          placeholder="Search by name…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ marginBottom: '1rem' }}
+          autoFocus
+        />
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {filtered.length === 0 ? (
+            <p style={{ color: '#55557a', textAlign: 'center', padding: '2rem 0' }}>No customers found.</p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Location ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((c, i) => (
+                  <tr key={c.stripe_customer_id}>
+                    <td className="td-muted">{i + 1}</td>
+                    <td>{c.customer_name}</td>
+                    <td className="td-muted" style={{ fontSize: '0.75rem' }}>{c.location_id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [data, setData]           = useState(null)
   const [loading, setLoading]     = useState(true)
@@ -37,9 +86,10 @@ export default function Dashboard() {
   const [filter, setFilter]       = useState('all')
   const [deleting, setDeleting]   = useState(false)
   const [retrying, setRetrying]   = useState(false)
-  const [confirmMode, setConfirmMode]   = useState(null) // 'single' | 'bulk'
-  const [showChargeModal, setShowChargeModal] = useState(false)
-  const [selectedIds, setSelectedIds]   = useState(new Set())
+  const [confirmMode, setConfirmMode]     = useState(null) // 'single' | 'bulk'
+  const [showChargeModal, setShowChargeModal]   = useState(false)
+  const [showCustomers, setShowCustomers] = useState(false)
+  const [selectedIds, setSelectedIds]     = useState(new Set())
   const navigate = useNavigate()
 
   useEffect(() => { loadData() }, [])
@@ -223,9 +273,10 @@ export default function Dashboard() {
               <div className="stat-label">Revenue This Month</div>
               <div className="stat-value">{fmt(data.stats.month_revenue)}</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-label">Locations</div>
+            <div className="stat-card stat-card-clickable" onClick={() => setShowCustomers(true)}>
+              <div className="stat-label">Stripe Customers</div>
               <div className="stat-value">{data.stats.customer_count}</div>
+              <div className="stat-sub">click to view all</div>
             </div>
           </div>
 
@@ -354,6 +405,13 @@ export default function Dashboard() {
           customers={data?.customers ?? []}
           onClose={() => setShowChargeModal(false)}
           onSuccess={loadData}
+        />
+      )}
+
+      {showCustomers && (
+        <CustomerListModal
+          customers={data?.customers ?? []}
+          onClose={() => setShowCustomers(false)}
         />
       )}
 
