@@ -62,6 +62,7 @@ function CustomerDropdown({ customers, selected, onSelect }) {
 }
 
 export default function ManualChargeModal({ customers, onClose, onSuccess }) {
+  const locCustomers = customers.filter(c => c.location_id)
   const [selected, setSelected]       = useState(null)
   const [amount, setAmount]           = useState(null)
   const [description, setDescription] = useState('')
@@ -141,7 +142,7 @@ export default function ManualChargeModal({ customers, onClose, onSuccess }) {
               <div className="mc-field">
                 <label className="mc-label">Customer</label>
                 <CustomerDropdown
-                  customers={customers}
+                  customers={locCustomers}
                   selected={selected}
                   onSelect={setSelected}
                 />
