@@ -1,3 +1,4 @@
+import Stripe from 'stripe'
 import { supabase } from './lib/supabase.js'
 
 export const handler = async (event) => {
@@ -14,17 +15,33 @@ export const handler = async (event) => {
     if (authError || !user)
       return { statusCode: 401, body: JSON.stringify({ error: 'Invalid or expired session' }) }
 
-    const [pendingRes, chargesRes] = await Promise.all([
-      supabase
-        .from('pending_appointments')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('charge_requests')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50),
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+
+    const [[pendingRes, chargesRes], stripeCustomers] = await Promise.all([
+      Promise.all([
+        supabase
+          .from('pending_appointments')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('charge_requests')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ]),
+      // Fetch all Stripe customers (auto-paginate up to 10 pages / 1000 customers)
+      (async () => {
+        const all = []
+        let params = { limit: 100 }
+        for (let i = 0; i < 10; i++) {
+          const page = await stripe.customers.list(params)
+          all.push(...page.data)
+          if (!page.has_more) break
+          params.starting_after = page.data[page.data.length - 1].id
+        }
+        return all
+      })(),
     ])
 
     if (pendingRes.error) throw new Error(pendingRes.error.message)
@@ -44,17 +61,22 @@ export const handler = async (event) => {
       c.status === 'pending' && new Date(c.expires_at) >= now
     ).length
 
-    // Distinct customers from all activity
+    // Build customers from Stripe — extract location_id from billing email (loc_<id>@billing.internal)
     const customerMap = new Map()
-    for (const a of pending) {
-      if (!customerMap.has(a.location_id))
-        customerMap.set(a.location_id, { location_id: a.location_id, customer_name: a.customer_name || a.location_id })
+    for (const sc of stripeCustomers) {
+      const email = sc.email || ''
+      const match = email.match(/^loc_(.+)@billing\.internal$/)
+      const location_id = match ? sc.email.replace('@billing.internal', '') : null
+      if (!location_id) continue
+      customerMap.set(location_id, {
+        location_id,
+        customer_name: sc.name || location_id,
+        stripe_customer_id: sc.id,
+      })
     }
-    for (const c of charges) {
-      if (!customerMap.has(c.location_id))
-        customerMap.set(c.location_id, { location_id: c.location_id, customer_name: c.customer_name || c.location_id })
-    }
-    const customers   = [...customerMap.values()]
+    const customers   = [...customerMap.values()].sort((a, b) =>
+      a.customer_name.localeCompare(b.customer_name)
+    )
     const customerIds = new Set(customerMap.keys())
 
     return {
