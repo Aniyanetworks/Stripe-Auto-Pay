@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import Logo from '../components/Logo'
+import SearchInput from '../components/SearchInput'
 import ConfirmModal from '../components/ConfirmModal'
 import ManualChargeModal from '../components/ManualChargeModal'
 
@@ -42,12 +43,11 @@ function CustomerListModal({ customers, onClose }) {
           <h2 className="modal-title" style={{ margin: 0 }}>Stripe Customers ({customers.length})</h2>
           <button className="btn-ghost" onClick={onClose} style={{ padding: '0.25rem 0.75rem' }}>✕</button>
         </div>
-        <input
-          className="mc-input"
+        <SearchInput
           placeholder="Search by name…"
           value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ marginBottom: '1rem' }}
+          onChange={setSearch}
+          style={{ marginBottom: '1rem', width: '100%' }}
           autoFocus
         />
         <div style={{ overflowY: 'auto', flex: 1 }}>
@@ -295,12 +295,10 @@ export default function Dashboard() {
             <div className="db-section-header">
               <div className="db-section-title">Charge History</div>
               <div className="db-section-controls">
-                <input
-                  className="table-search"
-                  type="text"
-                  placeholder="Search name or location…"
+                <SearchInput
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  onChange={setSearch}
+                  placeholder="Search name or location…"
                 />
                 <div className="filter-tabs">
                   {STATUS_FILTERS.map(f => (

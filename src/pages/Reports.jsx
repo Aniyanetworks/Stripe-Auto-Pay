@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import Logo from '../components/Logo'
+import SearchInput from '../components/SearchInput'
 
 const fmt = cents => cents != null ? `$${(cents / 100).toFixed(0)}` : '—'
 
@@ -76,11 +77,10 @@ export default function Reports() {
         <div className="db-section-header">
           <div className="db-section-title">Location Reports</div>
           <div className="db-section-controls">
-            <input
-              className="table-search"
-              placeholder="Search name or location…"
+            <SearchInput
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={setSearch}
+              placeholder="Search name or location…"
             />
             <div className="filter-tabs">
               {PERIODS.map(p => (

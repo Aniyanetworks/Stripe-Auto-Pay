@@ -568,7 +568,7 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
   flex-shrink: 0;
 }
 
-.table-search {
+.search-input {
   -webkit-appearance: none;
   appearance: none;
   background: transparent !important;
@@ -585,8 +585,8 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
   transition: border-color 0.15s, color 0.15s;
   color-scheme: dark;
 }
-.table-search::placeholder { color: #606080; }
-.table-search:focus { border-color: var(--brand-accent) !important; color: #c0b0f0; }
+.search-input::placeholder { color: #606080; }
+.search-input:focus { border-color: var(--brand-accent) !important; color: #c0b0f0; }
 
 .filter-tabs {
   display: flex;
