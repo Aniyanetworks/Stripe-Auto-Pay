@@ -55,12 +55,14 @@ export default function Reports() {
 
   const totals = filtered.reduce((acc, r) => {
     const p = getPeriodData(r)
-    acc.appointments += p.appointments
-    acc.charged      += p.charged
-    acc.pending      += p.pending
-    acc.canceled     += p.canceled
+    acc.appointments    += p.appointments
+    acc.charged         += p.charged
+    acc.pending         += p.pending
+    acc.canceled        += p.canceled
+    acc.booking_revenue += p.booking_revenue
+    acc.manual_revenue  += p.manual_revenue
     return acc
-  }, { appointments: 0, charged: 0, pending: 0, canceled: 0 })
+  }, { appointments: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 })
 
   return (
     <div className="db-wrapper">
@@ -139,6 +141,8 @@ export default function Reports() {
                   <th className="th-num">Charged</th>
                   <th className="th-num">Pending</th>
                   <th className="th-num">Canceled</th>
+                  <th className="th-num">Booking Revenue</th>
+                  <th className="th-num">Manual Charge Revenue</th>
                 </tr>
               </thead>
               <tbody>
@@ -155,6 +159,8 @@ export default function Reports() {
                       <td className="th-num rpt-charged">{p.charged}</td>
                       <td className="th-num rpt-pending">{p.pending}</td>
                       <td className="th-num rpt-canceled">{p.canceled}</td>
+                      <td className="th-num" style={{ color: '#34d399' }}>${(p.booking_revenue / 100).toFixed(2)}</td>
+                      <td className="th-num" style={{ color: '#a78bfa' }}>${(p.manual_revenue / 100).toFixed(2)}</td>
                     </tr>
                   )
                 })}
@@ -166,6 +172,8 @@ export default function Reports() {
                   <td className="th-num rpt-charged" style={{ fontWeight: 700 }}>{totals.charged}</td>
                   <td className="th-num rpt-pending"  style={{ fontWeight: 700 }}>{totals.pending}</td>
                   <td className="th-num rpt-canceled" style={{ fontWeight: 700 }}>{totals.canceled}</td>
+                  <td className="th-num" style={{ fontWeight: 700, color: '#34d399' }}>${(totals.booking_revenue / 100).toFixed(2)}</td>
+                  <td className="th-num" style={{ fontWeight: 700, color: '#a78bfa' }}>${(totals.manual_revenue / 100).toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>
