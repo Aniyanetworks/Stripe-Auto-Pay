@@ -48,15 +48,7 @@ export default function Reports() {
     r.location_id.toLowerCase().includes(q)
   )
 
-  function getPeriodData(r) {
-    if (period !== 'all') return r[period]
-    return {
-      appointments: r.this_week.appointments + r.last_week.appointments + r.this_month.appointments,
-      charged:      r.this_week.charged      + r.last_week.charged      + r.this_month.charged,
-      pending:      r.this_week.pending      + r.last_week.pending      + r.this_month.pending,
-      canceled:     r.this_week.canceled     + r.last_week.canceled     + r.this_month.canceled,
-    }
-  }
+  function getPeriodData(r) { return r[period] }
 
   const totals = filtered.reduce((acc, r) => {
     const p = getPeriodData(r)

@@ -63,6 +63,7 @@ export const handler = async (event) => {
           location_id:   c.location_id,
           customer_name: c.customer_name || c.location_id,
           per_appointment_rate: null,
+          all:        { appointments: 0, charged: 0, pending: 0, canceled: 0 },
           this_week:  { appointments: 0, charged: 0, pending: 0, canceled: 0 },
           last_week:  { appointments: 0, charged: 0, pending: 0, canceled: 0 },
           this_month: { appointments: 0, charged: 0, pending: 0, canceled: 0 },
@@ -89,6 +90,7 @@ export const handler = async (event) => {
         period[statusGroup] += apptCount || 1 // count at least 1 for manual charges
       }
 
+      addTo(loc.all) // always count in all — no overlap
       if (inRange(c.created_at, thisWeek.start,  thisWeek.end))  addTo(loc.this_week)
       if (inRange(c.created_at, lastWeek.start,  lastWeek.end))  addTo(loc.last_week)
       if (inRange(c.created_at, thisMonth.start, thisMonth.end)) addTo(loc.this_month)
