@@ -83,7 +83,7 @@ export default function Reports() {
             <div className="stat-sub">charged manual requests</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Manual Charge Amount</div>
+            <div className="stat-label">Manual Charge Revenue</div>
             <div className="stat-value">${(summary.manual_amount / 100).toFixed(2)}</div>
             <div className="stat-sub">total collected via manual</div>
           </div>
@@ -93,7 +93,7 @@ export default function Reports() {
             <div className="stat-sub">appointments charged</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Appointment Revenue</div>
+            <div className="stat-label">Booking Revenue</div>
             <div className="stat-value">${(summary.appt_amount / 100).toFixed(2)}</div>
             <div className="stat-sub">total collected via bookings</div>
           </div>
