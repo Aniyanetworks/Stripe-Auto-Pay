@@ -55,14 +55,15 @@ export default function Reports() {
 
   const totals = filtered.reduce((acc, r) => {
     const p = getPeriodData(r)
-    acc.appointments    += p.appointments
+    acc.manual_count    += p.manual_count
+    acc.booking_count   += p.booking_count
     acc.charged         += p.charged
     acc.pending         += p.pending
     acc.canceled        += p.canceled
     acc.booking_revenue += p.booking_revenue
     acc.manual_revenue  += p.manual_revenue
     return acc
-  }, { appointments: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 })
+  }, { manual_count: 0, booking_count: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 })
 
   return (
     <div className="db-wrapper">
@@ -137,7 +138,8 @@ export default function Reports() {
                   <th>Location</th>
                   <th>Location ID</th>
                   <th className="th-num">Rate/Appt</th>
-                  <th className="th-num">Appointments</th>
+                  <th className="th-num">Manual Charges</th>
+                  <th className="th-num">Bookings</th>
                   <th className="th-num">Charged</th>
                   <th className="th-num">Pending</th>
                   <th className="th-num">Canceled</th>
@@ -155,7 +157,8 @@ export default function Reports() {
                       <td className="th-num" style={{ color: '#a78bfa' }}>
                         {r.per_appointment_rate ? fmt(r.per_appointment_rate) : '—'}
                       </td>
-                      <td className="th-num" style={{ fontWeight: 600 }}>{p.appointments}</td>
+                      <td className="th-num" style={{ fontWeight: 600 }}>{p.manual_count}</td>
+                      <td className="th-num" style={{ fontWeight: 600 }}>{p.booking_count}</td>
                       <td className="th-num rpt-charged">{p.charged}</td>
                       <td className="th-num rpt-pending">{p.pending}</td>
                       <td className="th-num rpt-canceled">{p.canceled}</td>
@@ -167,8 +170,9 @@ export default function Reports() {
               </tbody>
               <tfoot>
                 <tr className="rpt-totals-row">
-                  <td colSpan={3} style={{ fontWeight: 600, color: '#e0e0ff' }}>Total ({filtered.length} locations)</td>
-                  <td className="th-num" style={{ fontWeight: 700, color: '#e0e0ff' }}>{totals.appointments}</td>
+                  <td colSpan={3} style={{ fontWeight: 600, color: '#e0e0ff' }}>Total ({filtered.length} location{filtered.length !== 1 ? 's' : ''})</td>
+                  <td className="th-num" style={{ fontWeight: 700, color: '#e0e0ff' }}>{totals.manual_count}</td>
+                  <td className="th-num" style={{ fontWeight: 700, color: '#e0e0ff' }}>{totals.booking_count}</td>
                   <td className="th-num rpt-charged" style={{ fontWeight: 700 }}>{totals.charged}</td>
                   <td className="th-num rpt-pending"  style={{ fontWeight: 700 }}>{totals.pending}</td>
                   <td className="th-num rpt-canceled" style={{ fontWeight: 700 }}>{totals.canceled}</td>

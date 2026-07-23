@@ -71,10 +71,10 @@ export const handler = async (event) => {
           location_id:   c.location_id,
           customer_name: c.customer_name || c.location_id,
           per_appointment_rate: null,
-          all:        { appointments: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 },
-          this_week:  { appointments: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 },
-          last_week:  { appointments: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 },
-          this_month: { appointments: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 },
+          all:        { manual_count: 0, booking_count: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 },
+          this_week:  { manual_count: 0, booking_count: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 },
+          last_week:  { manual_count: 0, booking_count: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 },
+          this_month: { manual_count: 0, booking_count: 0, charged: 0, pending: 0, canceled: 0, booking_revenue: 0, manual_revenue: 0 },
         })
       }
 
@@ -106,9 +106,9 @@ export const handler = async (event) => {
       }
 
       function addTo(period) {
-        const count = apptCount || 1
-        period.appointments += count
-        period[statusGroup] += count
+        if (isManual) period.manual_count  += 1
+        else          period.booking_count += apptCount
+        period[statusGroup] += isManual ? 1 : apptCount
         if (c.status === 'charged') {
           if (isManual) period.manual_revenue  += c.amount
           else          period.booking_revenue += c.amount
