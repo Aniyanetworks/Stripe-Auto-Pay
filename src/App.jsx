@@ -4,6 +4,7 @@ import Success        from './pages/Success'
 import Approve        from './pages/Approve'
 import Login          from './pages/Login'
 import Dashboard      from './pages/Dashboard'
+import Reports        from './pages/Reports'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function Root() {
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/approve"   element={<Approve />} />
         <Route path="/login"     element={<Login />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/reports"   element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="*"          element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

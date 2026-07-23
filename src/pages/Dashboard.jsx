@@ -247,6 +247,9 @@ export default function Dashboard() {
           <button className="btn-ghost btn-ghost-primary" onClick={() => setShowChargeModal(true)}>
             + New Charge
           </button>
+          <button className="btn-ghost" onClick={() => navigate('/reports')}>
+            Reports
+          </button>
           <button className="btn-ghost" onClick={loadData} disabled={loading}>
             {loading ? '...' : '↻ Refresh'}
           </button>
