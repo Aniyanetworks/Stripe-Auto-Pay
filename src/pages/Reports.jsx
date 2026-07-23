@@ -14,7 +14,8 @@ const PERIODS = [
 ]
 
 export default function Reports() {
-  const [report, setReport]   = useState(null)
+  const [report, setReport]     = useState(null)
+  const [summary, setSummary]   = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState('')
   const [period, setPeriod]   = useState('all')
@@ -36,6 +37,7 @@ export default function Reports() {
       if (!res.ok) throw new Error('Failed to load report data')
       const json = await res.json()
       setReport(json.report)
+      setSummary(json.summary)
     } catch (e) {
       setError(e.message)
     }
@@ -72,6 +74,31 @@ export default function Reports() {
       </header>
 
       {error && <div className="db-error">{error}</div>}
+
+      {summary && (
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-label">Total Manual Charges</div>
+            <div className="stat-value">{summary.manual_count}</div>
+            <div className="stat-sub">charged manual requests</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Manual Charge Amount</div>
+            <div className="stat-value">${(summary.manual_amount / 100).toFixed(2)}</div>
+            <div className="stat-sub">total collected via manual</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Appointment Bookings</div>
+            <div className="stat-value">{summary.appt_count}</div>
+            <div className="stat-sub">appointments charged</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Appointment Revenue</div>
+            <div className="stat-value">${(summary.appt_amount / 100).toFixed(2)}</div>
+            <div className="stat-sub">total collected via bookings</div>
+          </div>
+        </div>
+      )}
 
       <div className="db-section">
         <div className="db-section-header">

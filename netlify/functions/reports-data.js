@@ -56,6 +56,14 @@ export const handler = async (event) => {
     // Group by location
     const locMap = new Map()
 
+    // Overall summary counters
+    const summary = {
+      manual_count:      0,
+      manual_amount:     0,
+      appt_count:        0,
+      appt_amount:       0,
+    }
+
     for (const c of charges) {
       const key = c.location_id
       if (!locMap.has(key)) {
@@ -70,8 +78,9 @@ export const handler = async (event) => {
         })
       }
 
-      const loc      = locMap.get(key)
+      const loc       = locMap.get(key)
       const apptCount = c.appointment_ids?.length || 0
+      const isManual  = apptCount === 0
 
       // Derive per-appointment rate from non-manual charges
       if (apptCount > 0 && loc.per_appointment_rate === null) {
@@ -79,19 +88,30 @@ export const handler = async (event) => {
       }
 
       const statusGroup =
-        c.status === 'charged'                          ? 'charged'  :
-        ['pending', 'batched', 'processing'].includes(c.status) ? 'pending'  :
-        ['failed', 'rejected', 'retried'].includes(c.status)    ? 'canceled' : null
+        c.status === 'charged'                                    ? 'charged'  :
+        ['pending', 'batched', 'processing'].includes(c.status)  ? 'pending'  :
+        ['failed', 'rejected', 'retried'].includes(c.status)     ? 'canceled' : null
 
       if (!statusGroup) continue
 
-      function addTo(period) {
-        const count = apptCount || 1 // manual charges count as 1
-        period.appointments  += count
-        period[statusGroup]  += count
+      // Overall summary (all time, only charged)
+      if (c.status === 'charged') {
+        if (isManual) {
+          summary.manual_count++
+          summary.manual_amount += c.amount
+        } else {
+          summary.appt_count  += apptCount
+          summary.appt_amount += c.amount
+        }
       }
 
-      addTo(loc.all) // always count in all — no overlap
+      function addTo(period) {
+        const count = apptCount || 1
+        period.appointments += count
+        period[statusGroup] += count
+      }
+
+      addTo(loc.all)
       if (inRange(c.created_at, thisWeek.start,  thisWeek.end))  addTo(loc.this_week)
       if (inRange(c.created_at, lastWeek.start,  lastWeek.end))  addTo(loc.last_week)
       if (inRange(c.created_at, thisMonth.start, thisMonth.end)) addTo(loc.this_month)
@@ -104,7 +124,7 @@ export const handler = async (event) => {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ report }),
+      body: JSON.stringify({ report, summary }),
     }
   } catch (err) {
     console.error('[reports-data]', err)
