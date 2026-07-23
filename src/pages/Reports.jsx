@@ -3,27 +3,19 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import Logo from '../components/Logo'
 
-const fmt     = cents => cents != null ? `$${(cents / 100).toFixed(0)}` : '—'
-const fmtFull = cents => cents != null ? `$${(cents / 100).toFixed(2)}` : '—'
+const fmt = cents => cents != null ? `$${(cents / 100).toFixed(0)}` : '—'
 
-function PeriodBlock({ label, data }) {
-  return (
-    <div className="rpt-period">
-      <div className="rpt-period-label">{label}</div>
-      <div className="rpt-period-appts">{data.appointments} appt{data.appointments !== 1 ? 's' : ''}</div>
-      <div className="rpt-period-stats">
-        <span className="rpt-stat rpt-charged">✓ {data.charged} charged</span>
-        <span className="rpt-stat rpt-pending">◷ {data.pending} pending</span>
-        <span className="rpt-stat rpt-canceled">✕ {data.canceled} canceled</span>
-      </div>
-    </div>
-  )
-}
+const PERIODS = [
+  { key: 'this_week',  label: 'This Week' },
+  { key: 'last_week',  label: 'Last Week' },
+  { key: 'this_month', label: 'This Month' },
+]
 
 export default function Reports() {
   const [report, setReport]   = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState('')
+  const [period, setPeriod]   = useState('this_week')
   const [search, setSearch]   = useState('')
   const navigate = useNavigate()
 
@@ -48,11 +40,21 @@ export default function Reports() {
     setLoading(false)
   }
 
+  const q = search.trim().toLowerCase()
   const filtered = (report || []).filter(r =>
-    !search.trim() ||
-    r.customer_name.toLowerCase().includes(search.toLowerCase()) ||
-    r.location_id.toLowerCase().includes(search.toLowerCase())
+    !q ||
+    r.customer_name.toLowerCase().includes(q) ||
+    r.location_id.toLowerCase().includes(q)
   )
+
+  const totals = filtered.reduce((acc, r) => {
+    const p = r[period]
+    acc.appointments += p.appointments
+    acc.charged      += p.charged
+    acc.pending      += p.pending
+    acc.canceled     += p.canceled
+    return acc
+  }, { appointments: 0, charged: 0, pending: 0, canceled: 0 })
 
   return (
     <div className="db-wrapper">
@@ -77,6 +79,17 @@ export default function Reports() {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
+            <div className="filter-tabs">
+              {PERIODS.map(p => (
+                <button
+                  key={p.key}
+                  className={`filter-tab ${period === p.key ? 'active' : ''}`}
+                  onClick={() => setPeriod(p.key)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -85,27 +98,47 @@ export default function Reports() {
         ) : filtered.length === 0 ? (
           <p className="db-empty">No report data found.</p>
         ) : (
-          <div className="rpt-grid">
-            {filtered.map(r => (
-              <div className="rpt-card" key={r.location_id}>
-                <div className="rpt-card-header">
-                  <div>
-                    <div className="rpt-name">{r.customer_name}</div>
-                    <div className="rpt-loc">{r.location_id}</div>
-                  </div>
-                  {r.per_appointment_rate && (
-                    <div className="rpt-rate">
-                      {fmt(r.per_appointment_rate)}<span className="rpt-rate-sub">/appt</span>
-                    </div>
-                  )}
-                </div>
-                <div className="rpt-periods">
-                  <PeriodBlock label="This Week"  data={r.this_week} />
-                  <PeriodBlock label="Last Week"  data={r.last_week} />
-                  <PeriodBlock label="This Month" data={r.this_month} />
-                </div>
-              </div>
-            ))}
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Location</th>
+                  <th>Location ID</th>
+                  <th className="th-num">Rate/Appt</th>
+                  <th className="th-num">Appointments</th>
+                  <th className="th-num">Charged</th>
+                  <th className="th-num">Pending</th>
+                  <th className="th-num">Canceled</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(r => {
+                  const p = r[period]
+                  return (
+                    <tr key={r.location_id}>
+                      <td style={{ fontWeight: 500, color: '#e0e0ff' }}>{r.customer_name}</td>
+                      <td className="td-muted" style={{ fontSize: '0.75rem' }}>{r.location_id}</td>
+                      <td className="th-num" style={{ color: '#a78bfa' }}>
+                        {r.per_appointment_rate ? fmt(r.per_appointment_rate) : '—'}
+                      </td>
+                      <td className="th-num" style={{ fontWeight: 600 }}>{p.appointments}</td>
+                      <td className="th-num rpt-charged">{p.charged}</td>
+                      <td className="th-num rpt-pending">{p.pending}</td>
+                      <td className="th-num rpt-canceled">{p.canceled}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="rpt-totals-row">
+                  <td colSpan={3} style={{ fontWeight: 600, color: '#e0e0ff' }}>Total ({filtered.length} locations)</td>
+                  <td className="th-num" style={{ fontWeight: 700, color: '#e0e0ff' }}>{totals.appointments}</td>
+                  <td className="th-num rpt-charged" style={{ fontWeight: 700 }}>{totals.charged}</td>
+                  <td className="th-num rpt-pending"  style={{ fontWeight: 700 }}>{totals.pending}</td>
+                  <td className="th-num rpt-canceled" style={{ fontWeight: 700 }}>{totals.canceled}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         )}
       </div>
