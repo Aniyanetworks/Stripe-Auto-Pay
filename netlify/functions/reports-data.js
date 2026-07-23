@@ -86,8 +86,9 @@ export const handler = async (event) => {
       if (!statusGroup) continue
 
       function addTo(period) {
-        period.appointments += apptCount
-        period[statusGroup] += apptCount || 1 // count at least 1 for manual charges
+        const count = apptCount || 1 // manual charges count as 1
+        period.appointments  += count
+        period[statusGroup]  += count
       }
 
       addTo(loc.all) // always count in all — no overlap
