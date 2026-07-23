@@ -571,21 +571,22 @@ input:disabled { opacity: 0.6; cursor: not-allowed; }
 .table-search {
   -webkit-appearance: none;
   appearance: none;
-  background: #0d0d0d !important;
+  background: transparent !important;
   border: 1px solid #2e2e4a !important;
   border-radius: 999px;
-  color: #606080;
+  color: #8080a0;
   font-family: var(--font-sans);
   font-size: 0.72rem;
-  padding: 0.28rem 0.85rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
   outline: none !important;
   box-shadow: none !important;
-  width: 220px;
+  width: 200px;
   transition: border-color 0.15s, color 0.15s;
   color-scheme: dark;
 }
-.table-search::placeholder { color: #35354f; }
-.table-search:focus { border-color: var(--brand-accent) !important; color: #a090c8; }
+.table-search::placeholder { color: #606080; }
+.table-search:focus { border-color: var(--brand-accent) !important; color: #c0b0f0; }
 
 .filter-tabs {
   display: flex;
