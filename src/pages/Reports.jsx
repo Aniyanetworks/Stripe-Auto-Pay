@@ -6,6 +6,7 @@ import Logo from '../components/Logo'
 const fmt = cents => cents != null ? `$${(cents / 100).toFixed(0)}` : '—'
 
 const PERIODS = [
+  { key: 'all',        label: 'All' },
   { key: 'this_week',  label: 'This Week' },
   { key: 'last_week',  label: 'Last Week' },
   { key: 'this_month', label: 'This Month' },
@@ -15,7 +16,7 @@ export default function Reports() {
   const [report, setReport]   = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState('')
-  const [period, setPeriod]   = useState('this_week')
+  const [period, setPeriod]   = useState('all')
   const [search, setSearch]   = useState('')
   const navigate = useNavigate()
 
@@ -47,8 +48,18 @@ export default function Reports() {
     r.location_id.toLowerCase().includes(q)
   )
 
+  function getPeriodData(r) {
+    if (period !== 'all') return r[period]
+    return {
+      appointments: r.this_week.appointments + r.last_week.appointments + r.this_month.appointments,
+      charged:      r.this_week.charged      + r.last_week.charged      + r.this_month.charged,
+      pending:      r.this_week.pending      + r.last_week.pending      + r.this_month.pending,
+      canceled:     r.this_week.canceled     + r.last_week.canceled     + r.this_month.canceled,
+    }
+  }
+
   const totals = filtered.reduce((acc, r) => {
-    const p = r[period]
+    const p = getPeriodData(r)
     acc.appointments += p.appointments
     acc.charged      += p.charged
     acc.pending      += p.pending
@@ -113,7 +124,7 @@ export default function Reports() {
               </thead>
               <tbody>
                 {filtered.map(r => {
-                  const p = r[period]
+                  const p = getPeriodData(r)
                   return (
                     <tr key={r.location_id}>
                       <td style={{ fontWeight: 500, color: '#e0e0ff' }}>{r.customer_name}</td>
