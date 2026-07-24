@@ -5,7 +5,7 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'POST')
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
 
-  const { location_id, customer_id, amount, description, name } = JSON.parse(event.body || '{}')
+  const { location_id, customer_id, amount, description } = JSON.parse(event.body || '{}')
 
   if (!location_id && !customer_id)
     return { statusCode: 400, body: JSON.stringify({ error: 'location_id or customer_id required' }) }
@@ -41,10 +41,7 @@ export const handler = async (event) => {
     if (!paymentMethodId)
       return { statusCode: 400, body: JSON.stringify({ error: 'Customer has no default payment method saved yet.' }) }
 
-    const customerName = name || customer.name || effectiveLocId
-
-    if (name && !customer.name)
-      await stripe.customers.update(customerId, { name })
+    const customerName = customer.name || effectiveLocId
 
     // Queue in Supabase — no Slack, no charge yet
     const { error: dbError } = await supabase.from('pending_appointments').insert({

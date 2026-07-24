@@ -1,29 +1,32 @@
 import crypto from 'crypto'
 import { supabase } from './lib/supabase.js'
 
-// GHL calls this at 5PM ET with: { "location_id": "xxx" }
+// GHL calls this at 5PM ET with: { "location_id": "xxx" } or { "customer_id": "cus_xxx" }
 // Returns total amount + approve URL for GHL to include in its Slack message.
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST')
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
 
-  const { location_id } = JSON.parse(event.body || '{}')
-  if (!location_id)
-    return { statusCode: 400, body: JSON.stringify({ error: 'location_id required' }) }
+  const { location_id, customer_id } = JSON.parse(event.body || '{}')
+  const effectiveLocId = location_id || customer_id
+  if (!effectiveLocId)
+    return { statusCode: 400, body: JSON.stringify({ error: 'location_id or customer_id required' }) }
 
   try {
     // Guard: don't create a duplicate batch if one already exists for today (ET)
     const todayET    = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) // YYYY-MM-DD
     const dayStart   = new Date(`${todayET}T00:00:00-05:00`).toISOString()
-    const { data: existing } = await supabase
+    const { data: existingRaw } = await supabase
       .from('charge_requests')
-      .select('id, status')
-      .eq('location_id', location_id)
+      .select('id, status, appointment_ids')
+      .eq('location_id', effectiveLocId)
       .gte('created_at', dayStart)
       .in('status', ['pending', 'processing', 'charged'])
-      .limit(1)
 
-    if (existing?.length > 0) {
+    // Only count real appointment batches — ignore direct onboarding charges (appointment_ids is empty)
+    const existing = (existingRaw || []).filter(r => r.appointment_ids?.length > 0)
+
+    if (existing.length > 0) {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -31,11 +34,11 @@ export const handler = async (event) => {
       }
     }
 
-    // Fetch all pending appointments for this location
+    // Fetch all pending appointments for this location/customer
     const { data: appointments, error } = await supabase
       .from('pending_appointments')
       .select('*')
-      .eq('location_id', location_id)
+      .eq('location_id', effectiveLocId)
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
 
@@ -75,7 +78,7 @@ export const handler = async (event) => {
     // Create one charge_request for the full day's batch
     const { error: insertError } = await supabase.from('charge_requests').insert({
       token,
-      location_id,
+      location_id:       effectiveLocId,
       customer_id:       first.customer_id,
       payment_method_id: first.payment_method_id,
       customer_name:     first.customer_name,
@@ -95,7 +98,7 @@ export const handler = async (event) => {
       .update({ status: 'batched', batch_token: token })
       .in('id', appointmentIds)
 
-    console.log(`[daily-summary] batch created — location=${location_id} count=${count} total=$${dollars}`)
+    console.log(`[daily-summary] batch created — id=${effectiveLocId} count=${count} total=$${dollars}`)
 
     return {
       statusCode: 200,
