@@ -1,7 +1,12 @@
 import { useState } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
 
 export default function Onboard() {
+  const [searchParams] = useSearchParams()
+  const navigate       = useNavigate()
+  const amountParam    = searchParams.get('amount') // e.g. "250"
+
   const [form, setForm] = useState({
     name:          '',
     business_name: '',
@@ -32,6 +37,10 @@ export default function Onboard() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Failed to submit. Please try again.')
+      if (amountParam) {
+        navigate(`/pay?customer_id=${json.customer_id}&amount=${amountParam}`)
+        return
+      }
       setStatus('done')
     } catch (err) {
       setError(err.message)
