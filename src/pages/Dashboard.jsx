@@ -87,7 +87,7 @@ function CustomerListModal({ customers, onClose }) {
                   <tr key={c.stripe_customer_id}>
                     <td className="td-muted">{i + 1}</td>
                     <td>{c.customer_name}</td>
-                    <td className="td-muted" style={{ fontSize: '0.75rem' }}>{c.location_id || '—'}</td>
+                    <td className="td-muted" style={{ fontSize: '0.75rem' }}>{c.stripe_customer_id}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'nowrap' }}>
                         {PAY_AMOUNTS.map(amt => (
@@ -389,7 +389,7 @@ export default function Dashboard() {
                         />
                       </th>
                       <th>Customer</th>
-                      <th>Location</th>
+                      <th>Customer ID</th>
                       <th>Amount</th>
                       <th>Description</th>
                       <th>Status</th>
@@ -411,8 +411,8 @@ export default function Dashboard() {
                               onChange={() => toggleRow(c.id)}
                             />
                           </td>
-                          <td>{c.customer_name || c.location_id}</td>
-                          <td className="td-muted" style={{ fontSize: '0.78rem' }}>{c.location_id}</td>
+                          <td>{c.customer_name || c.customer_id}</td>
+                          <td className="td-muted" style={{ fontSize: '0.78rem' }}>{c.customer_id}</td>
                           <td>{fmt(c.amount)}</td>
                           <td className="td-desc">{c.description}</td>
                           <td><Badge status={status} /></td>

@@ -15,7 +15,7 @@ function CustomerDropdown({ customers, selected, onSelect }) {
   const filtered = query.trim()
     ? customers.filter(c =>
         c.customer_name.toLowerCase().includes(query.toLowerCase()) ||
-        (c.location_id || '').toLowerCase().includes(query.toLowerCase())
+        (c.stripe_customer_id || '').toLowerCase().includes(query.toLowerCase())
       )
     : customers
 
@@ -51,7 +51,7 @@ function CustomerDropdown({ customers, selected, onSelect }) {
                 onClick={() => pick(c)}
               >
                 <span className="cdd-item-name">{c.customer_name}</span>
-                <span className="cdd-item-loc">{c.location_id}</span>
+                <span className="cdd-item-loc">{c.stripe_customer_id}</span>
               </div>
             ))}
           </div>
