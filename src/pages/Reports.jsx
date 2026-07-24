@@ -136,7 +136,7 @@ export default function Reports() {
               <thead>
                 <tr>
                   <th>Location</th>
-                  <th>Location ID</th>
+                  <th>Customer ID</th>
                   <th className="th-num">Rate/Appt</th>
                   <th className="th-num">Manual Charges</th>
                   <th className="th-num">Bookings</th>

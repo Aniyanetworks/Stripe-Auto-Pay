@@ -76,9 +76,8 @@ export const handler = async (event) => {
       })
     }
     const customers = [...customerMap.values()]
-      .filter(c => c.location_id?.startsWith('loc_'))
       .sort((a, b) => a.customer_name.localeCompare(b.customer_name))
-    const customerIds = new Set(customers.map(c => c.location_id))
+    const customerIds = new Set(customers.map(c => c.stripe_customer_id))
 
     return {
       statusCode: 200,

@@ -31,11 +31,26 @@ function effectiveStatus(c) {
 
 const STATUS_FILTERS = ['all', 'batched', 'pending', 'charged', 'failed', 'rejected', 'retried']
 
+const PAY_AMOUNTS = [250, 500, 1000]
+
 function CustomerListModal({ customers, onClose }) {
-  const [search, setSearch] = useState('')
+  const [search,   setSearch]   = useState('')
+  const [copyMsg,  setCopyMsg]  = useState('')
+
   const filtered = customers.filter(c =>
-    c.customer_name.toLowerCase().includes(search.toLowerCase())
+    !search ||
+    c.customer_name.toLowerCase().includes(search.toLowerCase()) ||
+    (c.location_id || '').toLowerCase().includes(search.toLowerCase())
   )
+
+  function copyPayLink(c, dollars) {
+    const url = `${window.location.origin}/pay?customer_id=${c.stripe_customer_id}&amount=${dollars}`
+    navigator.clipboard.writeText(url).then(() => {
+      setCopyMsg(`Copied $${dollars} link for ${c.customer_name}`)
+      setTimeout(() => setCopyMsg(''), 3000)
+    })
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-box modal-lg" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
@@ -44,12 +59,16 @@ function CustomerListModal({ customers, onClose }) {
           <button className="btn-ghost" onClick={onClose} style={{ padding: '0.25rem 0.75rem' }}>✕</button>
         </div>
         <SearchInput
-          placeholder="Search by name…"
+          placeholder="Search by name or location…"
           value={search}
           onChange={setSearch}
-          style={{ marginBottom: '1rem', width: '100%' }}
-          autoFocus
+          style={{ marginBottom: '0.75rem', width: '100%' }}
         />
+        {copyMsg && (
+          <div style={{ marginBottom: '0.75rem', padding: '0.4rem 0.75rem', background: '#0d2a1e', border: '1px solid #34d39940', borderRadius: '6px', color: '#34d399', fontSize: '0.78rem' }}>
+            ✓ {copyMsg}
+          </div>
+        )}
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {filtered.length === 0 ? (
             <p style={{ color: '#55557a', textAlign: 'center', padding: '2rem 0' }}>No customers found.</p>
@@ -59,7 +78,8 @@ function CustomerListModal({ customers, onClose }) {
                 <tr>
                   <th>#</th>
                   <th>Name</th>
-                  <th>Location ID</th>
+                  <th>Customer ID</th>
+                  <th>Generate Pay Link</th>
                 </tr>
               </thead>
               <tbody>
@@ -67,7 +87,22 @@ function CustomerListModal({ customers, onClose }) {
                   <tr key={c.stripe_customer_id}>
                     <td className="td-muted">{i + 1}</td>
                     <td>{c.customer_name}</td>
-                    <td className="td-muted" style={{ fontSize: '0.75rem' }}>{c.location_id}</td>
+                    <td className="td-muted" style={{ fontSize: '0.75rem' }}>{c.location_id || '—'}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'nowrap' }}>
+                        {PAY_AMOUNTS.map(amt => (
+                          <button
+                            key={amt}
+                            className="btn-ghost"
+                            style={{ padding: '0.1rem 0.45rem', fontSize: '0.7rem', whiteSpace: 'nowrap' }}
+                            onClick={() => copyPayLink(c, amt)}
+                            title={`Copy $${amt} pay link`}
+                          >
+                            ${amt}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
